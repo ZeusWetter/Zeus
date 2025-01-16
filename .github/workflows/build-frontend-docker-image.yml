@@ -27,6 +27,6 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
-          tags: tags:|
+          tags: |
             ghcr.io/ZeusWetter/Zeus-frontend:latest
             ghcr.io/ZeusWetter/Zeus-frontend:${{ github.ref_name }}
