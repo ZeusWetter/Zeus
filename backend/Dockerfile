@@ -1,6 +1,5 @@
 # Basisimage ist ein Python-Image als Alpine-Version
 FROM python:3.13.1-alpine3.20 as backend
-COPY ./backend/ /backend/
 
 # Arbeitsverzeichnis im Container
 WORKDIR /app
