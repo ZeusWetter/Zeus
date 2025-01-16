@@ -29,6 +29,6 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: tags: |
+          tags: |
             ghcr.io/ZeusWetter/Zeus-backend:latest
             ghcr.io/ZeusWetter/Zeus-backend:${{ github.ref_name }}
