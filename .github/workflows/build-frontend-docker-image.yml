@@ -3,7 +3,9 @@ name: Build and Push Frontend Image
 on:
   push:
     branches:
-      - main
+      - '**'
+    tags-ignore:
+      - 'ignore-building*'
     paths:
       - 'frontend/**'
 
@@ -18,7 +20,7 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
+          username: emanuelkratz
           password: ${{ secrets.PAT }}
 
       - name: Build and push Frontend
@@ -28,5 +30,5 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           tags: |
-            ghcr.io/ZeusWetter/Zeus-frontend:latest
-            ghcr.io/ZeusWetter/Zeus-frontend:${{ github.ref_name }}
+            ghcr.io/zeusWetter/zeus-frontend:latest
+            ghcr.io/zeusWetter/zeus-frontend:${{ github.ref_name }}
