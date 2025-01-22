@@ -7,7 +7,7 @@ from io import StringIO
 #Wetterstationen in eine JSON Datei eingelesen
 def load_stations_data():
     url = "https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/ghcnd-stations.txt"
-    file_path = "backend/app/stations.json"
+    file_path = "backend/app/data/stations.json"
     response = requests.get(url)
     if response.status_code == 200:
         print("Datenzugriff war erfolgreich")
