@@ -25,13 +25,8 @@ def haversine_distance(lat1, lon1, lat2, lon2):
 
 # erstmal auslassen und Perfomance ohne testen: def calculate_bounds(lat, lon, radius):
 
-def find_nearest_stations(user_lat, user_lon, radius, max_stations):
-    json_file ="backend/app/data/stations.json"
-
-    # Auf die JSON Datei wird im Lesemodus zugegriffen und in der neuen Variable stations gespeichert -> Liste mit Dictionaries
-    with open(json_file, "r") as file:
-        stations = json.load(file)
-    
+def find_nearest_stations(user_lat, user_lon, radius, max_stations, json_data):
+    stations = json_data
     nearby_stations = [] # Liste für die n nächsten Stationen
 
     # Iteration über alle Stationen in der Liste stations um den Abstand zu berechnen. Dies geschieht über die haversine_distance Funktion
@@ -46,22 +41,25 @@ def find_nearest_stations(user_lat, user_lon, radius, max_stations):
 
     nearby_stations.sort(key=lambda x: x["Distance"])# Das lambda gibt an, dass die Liste nach dem Wert des Schlüssels "Distance" in jedem Dictionary sortiert wird.
     result = nearby_stations[:max_stations]
-    
-    # Ergebnis in einer neuen JSON-Datei speichern
-    output_file = "backend/app/data/nearest_stations.json"
-    with open(output_file, "w") as outfile:
-        json.dump(result, outfile, indent=4)
-
-    return json.dumps(result, indent=4)
+    return result
 
 if __name__ == "__main__":
 
+     # Auf die JSON Datei wird im Lesemodus zugegriffen und in der neuen Variable stations_data gespeichert -> Liste mit Dictionaries
+    json_file = "backend/app/data/stations.json"
+    with open(json_file, "r") as file:
+        stations_data = json.load(file)
+    
     user_lat = 48.0594 # Koordinaten von Villingen-Schwenningen
     user_lon = 8.4641
     search_radius = 100  # Radius in Kilometern
     max_stations = 5  # Maximale Anzahl der nächsten Stationen
 
-    results_json = find_nearest_stations(user_lat, user_lon, search_radius, max_stations)
+    results_json = find_nearest_stations(user_lat, user_lon, search_radius, max_stations, stations_data)
     print("Nächste Stationen innerhalb des Radius als JSON:")
     print(results_json)
+        # Ergebnis in einer neuen JSON-Datei speichern
+    output_file = "backend/app/data/nearest_stations.json"
+    with open(output_file, "w") as outfile:
+        json.dump(results_json, outfile, indent=4)
 
