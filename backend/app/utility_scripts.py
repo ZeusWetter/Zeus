@@ -1,29 +1,52 @@
-import math
-import json
+import requests, math
+import pandas as pd
+from io import StringIO
+
+# in folgender Funktion werden die Daten der
+# Wetterstationen in eine JSON Datei eingelesen
+def load_stations_data():
+    url = "https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/ghcnd-stations.txt"
+    file_path = "data/stations.json"
+    response = requests.get(url)
+    if response.status_code == 200:
+        print("Datenzugriff war erfolgreich")
+        # Die einzelnen Spalten benennen
+        columns = ["ID", "Latitude", "Longitude", "Elevation", "State", "Name"]
+        # Start- und Endpositionen der Spalten im Fixed-Width Format angeben
+        colspecs = [(0, 11), (12, 20), (21, 30), (31, 37), (38, 40), (41, 71)]
+        # Daten in einem Data Frame speichern
+        stations = pd.read_fwf(StringIO(response.text), colspecs=colspecs, header=None, names=columns)
+        # Die Daten in eine JSON-Datei speichern
+        stations.to_json(file_path, orient="records", indent=4)
+        print(f"Daten erfolgreich in {file_path} gespeichert")
+        return stations
+    else:
+        print(f"Fehler beim Herunterladen der Datei: {response.status_code}")
+        return None
+
 
 def haversine_distance(lat1, lon1, lat2, lon2):
     # Diese Funktion berechnet den Abstand zwischen 2 Punkten mit der Haversine-Formel.
     earth_radius = 6371.0 # Radius der Erde in km
 
-# sin() und cos() erwarten die Werte in Radiant und nicht in Grad
-    lat1_rad = math.radians(lat1) 
+    # sin() und cos() erwarten die Werte in Radiant und nicht in Grad
+    lat1_rad = math.radians(lat1)
     lon1_rad = math.radians(lon1)
     lat2_rad = math.radians(lat2)
     lon2_rad = math.radians(lon2)
 
-# Differenzen lat und lon werden berechnet
+    # Differenzen lat und lon werden berechnet
     dlat = lat2_rad - lat1_rad
     dlon = lon2_rad - lon1_rad
 
     # Haversine-Formel anwenden
     a = math.sin(dlat / 2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2)**2
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    
+
     # Entfernung berechnen
     distance = earth_radius * c
     return distance
 
-# erstmal auslassen und Perfomance ohne testen: def calculate_bounds(lat, lon, radius):
 
 def find_nearest_stations(user_lat, user_lon, radius, max_stations, json_data):
     stations = json_data
@@ -44,22 +67,7 @@ def find_nearest_stations(user_lat, user_lon, radius, max_stations, json_data):
     return result
 
 if __name__ == "__main__":
-
-     # Auf die JSON Datei wird im Lesemodus zugegriffen und in der neuen Variable stations_data gespeichert -> Liste mit Dictionaries
-    json_file = "backend/app/data/stations.json"
-    with open(json_file, "r") as file:
-        stations_data = json.load(file)
-    
-    user_lat = 48.0594 # Koordinaten von Villingen-Schwenningen
-    user_lon = 8.4641
-    search_radius = 100  # Radius in Kilometern
-    max_stations = 5  # Maximale Anzahl der nächsten Stationen
-
-    results_json = find_nearest_stations(user_lat, user_lon, search_radius, max_stations, stations_data)
-    print("Nächste Stationen innerhalb des Radius als JSON:")
-    print(results_json)
-        # Ergebnis in einer neuen JSON-Datei speichern
-    output_file = "backend/app/data/nearest_stations.json"
-    with open(output_file, "w") as outfile:
-        json.dump(results_json, outfile, indent=4)
-
+    try:
+        load_stations_data()
+    except Exception as e:
+        print(e)

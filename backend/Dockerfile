@@ -11,7 +11,7 @@ COPY requirements.txt /app
 RUN pip install --default-timeout=100 --no-cache-dir -r requirements.txt
 
 # Code kopieren
-COPY . /app
+COPY /app /app
 
 # Startbefehl
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD sh -c "python utility_scripts.py && uvicorn main:app --host 0.0.0.0 --port 8000"
