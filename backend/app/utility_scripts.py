@@ -26,6 +26,12 @@ def load_stations_data():
 
 
 def haversine_distance(lat1, lon1, lat2, lon2):
+    """
+    lat1: Breitengrad Punkt 1
+    lon1: Längengrad Punkt 1
+    lat2: Breitengrad Punkt 2
+    lon2: Längengrad Punkt 2
+    """
     # Diese Funktion berechnet den Abstand zwischen 2 Punkten mit der Haversine-Formel.
     earth_radius = 6371.0 # Radius der Erde in km
 
@@ -49,6 +55,13 @@ def haversine_distance(lat1, lon1, lat2, lon2):
 
 
 def find_nearest_stations(user_lat, user_lon, radius, max_stations, json_data):
+    """
+    user_lat: Eingabe Breitengrad des Users
+    user_lon: Eingabe Längengrad des Users
+    radius: Eingabe radius des Users
+    max_stations: Anzahl anzuzeigender Stationen. Eingabe des Users
+    json_data: JSON Daten der Stationen
+    """
     stations = json_data
     nearby_stations = [] # Liste für die n nächsten Stationen
 
@@ -65,6 +78,48 @@ def find_nearest_stations(user_lat, user_lon, radius, max_stations, json_data):
     nearby_stations.sort(key=lambda x: x["Distance"])# Das lambda gibt an, dass die Liste nach dem Wert des Schlüssels "Distance" in jedem Dictionary sortiert wird.
     result = nearby_stations[:max_stations]
     return result
+
+def download_weather_data(station_id, start_year, end_year):
+    """"
+    station_id: ID der Wetterstation. Beispiel Villingen-Schwenningen = "GME00129634"})
+    start_year: Startjahr im Format "YYYY"
+    end_year: Endjahr im Format "YYYY"
+    """
+    url = f"https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/all/{station_id}.dly"
+    
+    response = requests.get(url, stream=True)
+    if response.status_code != 200:
+        raise ValueError(f"Fehler beim Herunterladen der Datei: {url}")
+    
+    weather_data = {"station": station_id, "data": {}} # Datenstruktur wird erstellt
+
+    # Typumwandlungen für Vergleich
+    start_year = int(start_year)
+    end_year = int(end_year)
+
+    # Direkt aus dem Stream lesen, ohne die Datei zu speichern
+    for line in response.iter_lines(decode_unicode=True):
+        if line:  # Stelle sicher, dass die Zeile nicht leer ist
+            year = line[11:15]  # YYYY
+            month = line[15:17]  # MM
+            element = line[17:21]  # Wettervariable (TMAX, TMIN)
+
+            if start_year <= int(year) <= end_year and element in ["TMAX", "TMIN"]:
+                for day in range(1, 32):  # Maximal 31 Tage pro Monat
+                    pos = 21 + (day - 1) * 8 # Erster Tag ist an der 21 Stelle. Jeder Tag Inklusive Flag ist 8 Zeichen breit
+                    if pos + 5 <= len(line):  # Sicherstellen, dass der Index existiert
+                        value = int(line[pos:pos+5]) # extrahiert Daten aus der Zeile (5 Buchstaben pro Tag)
+                        if value == -9999:
+                            value = None
+                        else: 
+                            value = value /10
+                        date = f"{year}-{month}-{day:02d}" #02d stellt sicher dass der Tag immer zweistellig ist 1 -> 01
+                        
+                        if date not in weather_data["data"]:
+                            weather_data["data"][date] = {"TMAX": None, "TMIN": None} 
+                        
+                        weather_data["data"][date][element] = value
+    return weather_data
 
 if __name__ == "__main__":
     try:
