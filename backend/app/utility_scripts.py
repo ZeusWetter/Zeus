@@ -6,7 +6,7 @@ from io import StringIO
 # Wetterstationen in eine JSON Datei eingelesen
 def load_stations_data():
     url = "https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/ghcnd-stations.txt"
-    file_path = "data/stations.json"
+    # file_path = "data/stations.json"
     response = requests.get(url)
     if response.status_code == 200:
         print("Datenzugriff war erfolgreich")
@@ -16,9 +16,11 @@ def load_stations_data():
         colspecs = [(0, 11), (12, 20), (21, 30), (31, 37), (38, 40), (41, 71)]
         # Daten in einem Data Frame speichern
         stations = pd.read_fwf(StringIO(response.text), colspecs=colspecs, header=None, names=columns)
-        # Die Daten in eine JSON-Datei speichern
-        stations.to_json(file_path, orient="records", indent=4)
-        print(f"Daten erfolgreich in {file_path} gespeichert")
+
+        # Die Daten optional in eine JSON-Datei speichern
+        # stations.to_json(file_path, orient="records", indent=4)
+        # print(f"Daten erfolgreich in {file_path} gespeichert")
+
         return stations
     else:
         print(f"Fehler beim Herunterladen der Datei: {response.status_code}")
@@ -75,7 +77,7 @@ def find_nearest_stations(user_lat, user_lon, radius, max_stations, json_data):
             station_copy["Distance"] = distance
             nearby_stations.append(station_copy)
 
-    nearby_stations.sort(key=lambda x: x["Distance"])# Das lambda gibt an, dass die Liste nach dem Wert des Schlüssels "Distance" in jedem Dictionary sortiert wird.
+    nearby_stations.sort(key=lambda x: x["Distance"]) # Das lambda gibt an, dass die Liste nach dem Wert des Schlüssels "Distance" in jedem Dictionary sortiert wird.
     result = nearby_stations[:max_stations]
     return result
 
@@ -113,7 +115,7 @@ def download_weather_data(station_id, start_year, end_year):
                             value = None
                         else: 
                             value = value /10
-                        date = f"{year}-{month}-{day:02d}" #02d stellt sicher dass der Tag immer zweistellig ist 1 -> 01
+                        date = f"{year}-{month}-{day:02d}" # 02d stellt sicher dass der Tag immer zweistellig ist 1 -> 01
                         
                         if date not in weather_data["data"]:
                             weather_data["data"][date] = {"TMAX": None, "TMIN": None} 
