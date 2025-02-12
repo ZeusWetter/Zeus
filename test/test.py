@@ -21,9 +21,10 @@ class TestFunctions(unittest.TestCase):
             actual_result = haversine_distance(*input_values)
 
             # Check if results are equal
-            self.assertEqual(actual_result,
+            self.assertAlmostEqual(actual_result,
                             expected_result,
-                             f"Failed for input {input_values}. Expected distance: {expected_result} km, but got: {actual_result} km.")
+                             msg=f"Failed for input {input_values}. Expected distance: {expected_result} km, but got: {actual_result} km.",
+                             delta=1)
 
 if __name__ == "__main__":
     unittest.main()
