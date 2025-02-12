@@ -1,12 +1,16 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import json
 import unittest
 from backend.app.utility_scripts import haversine_distance
+import testdata
 
 class TestFunctions(unittest.TestCase):
 
     def test_haversine_distance(self):
         # get testcases from testdata.py
-        testcases = []
+        testcases = testdata.testdata_haversine
 
         # Check results for all testcases
         for case in testcases:
