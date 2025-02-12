@@ -1,24 +1,25 @@
 import json
 import unittest
-
+from backend.app.utility_scripts import haversine_distance
 
 class TestFunctions(unittest.TestCase):
 
     def test_haversine_distance(self):
         # get testcases from testdata.py
-        testcases =
+        testcases = []
 
-        # check results for all testcases
+        # Check results for all testcases
         for case in testcases:
-            input = case["input"]
-            expect_res = case["expected"]
+            input_values = case["input"]
+            expected_result = case["expected"]
 
-            # get the actual result
-            res =
+            # Get the actual result
+            actual_result = haversine_distance(*input_values)
 
-            # check if results are equal
-            self.assertEqual(res, expect_res,
-                             f"")
+            # Check if results are equal
+            self.assertEqual(actual_result,
+                            expected_result,
+                             f"Failed for input {input_values}. Expected distance: {expected_result} km, but got: {actual_result} km.")
 
 if __name__ == "__main__":
     unittest.main()
