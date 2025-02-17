@@ -1,6 +1,9 @@
 import requests, math
 import pandas as pd
+import numpy as np
+import json
 from io import StringIO
+from datetime import datetime
 
 # in folgender Funktion werden die Daten der
 # Wetterstationen in eine JSON Datei eingelesen
@@ -17,8 +20,8 @@ def load_stations_data():
         # Daten in einem Data Frame speichern
         stations = pd.read_fwf(StringIO(response.text), colspecs=colspecs, header=None, names=columns)
         # Die Daten in eine JSON-Datei speichern
-        stations.to_json(file_path, orient="records", indent=4)
-        print(f"Daten erfolgreich in {file_path} gespeichert")
+        # stations.to_json(file_path, orient="records", indent=4)
+        # print(f"Daten erfolgreich in {file_path} gespeichert")
         return stations
     else:
         print(f"Fehler beim Herunterladen der Datei: {response.status_code}")
@@ -121,8 +124,112 @@ def download_weather_data(station_id, start_year, end_year):
                         weather_data["data"][date][element] = value
     return weather_data
 
+def calculate_means(station_weather_data, first_year):
+    """
+    Berechnet die durchschnittlichen Maximal- und Minimaltemperaturen
+    für das gesamte Jahr sowie für jede Jahreszeit basierend auf den übergebenen Wetterdaten.
+    
+    Berücksichtigt dabei, dass der Dezember eines Jahres zur Winterperiode
+    des folgenden Jahres gezählt wird. Ignoriert die ersten 11 Monate des ersten Jahres.
+    
+    station_json_data: JSON mit Temperaturwerten einer Wetterstation
+    first_year: Erstes Jahr, dessen Januar bis November ignoriert wird
+    
+    Rückgabe: JSON mit Durchschnittswerten für das Jahr und die Jahreszeiten
+    """
+
+    # Monate werden den Jahreszeiten zugewiesen:
+    season_months = {
+        "spring": [3, 4, 5],
+        "summer": [6, 7, 8],
+        "autumn": [9, 10, 11]
+    }
+
+    # Datenstruktur wird bereitgestellt / initiiert:
+    seasonal_data = {
+        "spring": {}, 
+        "summer": {},
+        "autumn": {},
+        "winter": {},
+        "entire_year": {}
+    }
+
+    # Es wird über jeden Eintrag in station_weather_data iteriert
+    for date, values in sorted(station_weather_data["data"].items()):
+        try:
+            # Datum wird aufgeteilt in Jahr und Monat
+            date_parts = date.split("-")
+            year = int(date_parts[0])
+            month = int(date_parts[1])
+            if year == first_year and month < 12:
+                continue # Das erste Jahr wird bis auf den Dezember übersprungen
+
+            tmax = values.get("TMAX")
+            tmin = values.get("TMIN")
+            # Jährliche Daten kumulieren
+            if tmax is None:
+                tmax = np.nan
+            if tmin is None:
+                tmin = np.nan
+                
+            if year not in seasonal_data["entire_year"]:
+                seasonal_data["entire_year"][year] = {"TMAX": [], "TMIN": []}
+            seasonal_data["entire_year"][year]["TMAX"].append(tmax)
+            seasonal_data["entire_year"][year]["TMIN"].append(tmin)
+
+            for season, months in season_months.items():
+                if month in months:
+                    if year not in seasonal_data[season]:
+                        seasonal_data[season][year] = {"TMAX": [], "TMIN": []}
+                    seasonal_data[season][year]["TMAX"].append(tmax)
+                    seasonal_data[season][year]["TMIN"].append(tmin)
+
+            if month in [1, 2]:
+                 winter_year = year
+            else:
+                 winter_year = year + 1
+                        
+            if winter_year not in seasonal_data["winter"]:
+                seasonal_data["winter"][winter_year] = {"TMAX": [], "TMIN": []}
+            seasonal_data["winter"][winter_year]["TMAX"].append(tmax)
+            seasonal_data["winter"][winter_year]["TMIN"].append(tmin)
+         
+        except Exception as e:
+            print(f"Fehler beim Verarbeiten des Datums {date}: {e}")
+
+
+    # Jetzt werden die Mittelwerte berechnet. Zuerst für das gesamte Jahr und dann für die Jahreszeiten
+    # np.nanmean() berechnet den Mittelwert und ignoriert NaN-Werte -> keine Verfälschung durch fehlerhafte Werte.
+    result = {"entire_year": {}}
+    for year, values in seasonal_data["entire_year"].items():
+        if year == first_year:
+            continue
+        result["entire_year"][year] = {
+            "TMAX": np.nanmean(values["TMAX"]) if values["TMAX"] else None,
+            "TMIN": np.nanmean(values["TMIN"]) if values["TMIN"] else None
+        }
+
+    # Jetzt werden die Mittelwerte für die Jahreszeiten basierend auf unserer Datenstruktur "seasonal_data" berechnet
+    for season, data in seasonal_data.items():
+        if season == "entire_year":
+            continue
+        result[season] = {}
+        for year, values in data.items():
+            result[season][year] = {
+                "TMAX": np.nanmean(values["TMAX"]) if values["TMAX"] else None,
+                "TMIN": np.nanmean(values["TMIN"]) if values["TMIN"] else None
+                }
+    return json.dumps(result, indent=4)
+
 if __name__ == "__main__":
     try:
-        load_stations_data()
+        stations = load_stations_data()
+        if stations is not None:
+            station_id = "GME00129634"
+            weather_data = download_weather_data(station_id, 2015, 2024)
+            if weather_data:
+                result = calculate_means(weather_data, 2015)
+                print("Ergebnisse der Mittelwerte pro Saison:")
+                print(result)
     except Exception as e:
-        print(e)
+        print(f"Fehler: {e}")
