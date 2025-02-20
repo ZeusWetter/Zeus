@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import json
 from io import StringIO
+from collections import OrderedDict
 from datetime import datetime
 
 # in folgender Funktion werden die Daten der
@@ -124,7 +125,7 @@ def download_weather_data(station_id, start_year, end_year):
                         weather_data["data"][date][element] = value
     return weather_data
 
-def calculate_means(station_weather_data, first_year, latitude):
+def calculate_means(station_weather_data, first_year, last_year, latitude):
     """
     Berechnet die durchschnittlichen Maximal- und Minimaltemperaturen
     für das gesamte Jahr sowie für jede Jahreszeit basierend auf den übergebenen Wetterdaten.
@@ -185,6 +186,8 @@ def calculate_means(station_weather_data, first_year, latitude):
                         seasonal_data[season][year]["TMIN"].append(tmin)
 
                 if month in [12, 1, 2]:
+                    if year == last_year and month == 12:  
+                        continue  # Der Dezember des letzten Jahres wird ignoriert
                     if month in [1, 2]:
                         winter_year = year
                     else:
@@ -220,7 +223,16 @@ def calculate_means(station_weather_data, first_year, latitude):
                     "TMAX": np.nanmean(values["TMAX"]) if values["TMAX"] else None,
                     "TMIN": np.nanmean(values["TMIN"]) if values["TMIN"] else None
                     }
-        return json.dumps(result, indent=4)  
+                # Das dictionary wird sortiert, um einheitliche Darstellung nach Erdhälften zu versichern
+        ordered_result = OrderedDict([
+            ("entire_year", result.get("entire_year", {})),
+            ("winter", result.get("winter", {})),
+            ("spring", result.get("spring", {})),
+            ("summer", result.get("summer", {})),
+            ("autumn", result.get("autumn", {}))
+        ]) 
+        return json.dumps(ordered_result, indent=4)
+
     else: #Südhalbkugel
         # Monate werden den Jahreszeiten zugewiesen:
         season_months = {
@@ -239,7 +251,7 @@ def calculate_means(station_weather_data, first_year, latitude):
         }
 
         # Es wird über jeden Eintrag in station_weather_data iteriert
-        for date, values in sorted(station_weather_data["data"].items()):
+        for date, values in station_weather_data["data"].items():
             try:
                 # Datum wird aufgeteilt in Jahr und Monat
                 date_parts = date.split("-")
@@ -268,6 +280,8 @@ def calculate_means(station_weather_data, first_year, latitude):
                         seasonal_data[season][year]["TMAX"].append(tmax)
                         seasonal_data[season][year]["TMIN"].append(tmin)
                 if month in [12, 1, 2]:
+                    if year == last_year and month == 12:  
+                        continue  # Der Dezember des letzten Jahres wird ignoriert
                     if month in [1, 2]:
                         summer_year = year
                     else:
@@ -303,16 +317,28 @@ def calculate_means(station_weather_data, first_year, latitude):
                     "TMAX": np.nanmean(values["TMAX"]) if values["TMAX"] else None,
                     "TMIN": np.nanmean(values["TMIN"]) if values["TMIN"] else None
                     }
-        return json.dumps(result, indent=4)
+        # Das dictionary wird sortiert, um einheitliche Darstellung nach Erdhälften zu versichern
+        ordered_result = OrderedDict([
+            ("entire_year", result.get("entire_year", {})),
+            ("winter", result.get("winter", {})),
+            ("spring", result.get("spring", {})),
+            ("summer", result.get("summer", {})),
+            ("autumn", result.get("autumn", {}))
+        ])
+        return json.dumps(ordered_result, indent=4)
+
+
+
+
 if __name__ == "__main__":
     try:
         stations = load_stations_data()
         if stations is not None:
             station_id = "GME00129634"
-            test_latitude = 1
-            weather_data = download_weather_data(station_id, 2015, 2024)
+            test_latitude = -1
+            weather_data = download_weather_data(station_id, 2015, 2016)
             if weather_data:
-                result = calculate_means(weather_data, 2015, test_latitude)
+                result = calculate_means(weather_data, 2015, 2016, test_latitude)
                 print("Ergebnisse der Mittelwerte pro Saison:")
                 print(result)
     except Exception as e:
