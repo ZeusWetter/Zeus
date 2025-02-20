@@ -23,11 +23,48 @@ def load_stations_data():
         # Die Daten in eine JSON-Datei speichern
         # stations.to_json(file_path, orient="records", indent=4)
         # print(f"Daten erfolgreich in {file_path} gespeichert")
-        return stations
+        return stations.to_dict(orient="records") # Data Frame wird in eine Liste von Dictionaries umgewandelt
     else:
         print(f"Fehler beim Herunterladen der Datei: {response.status_code}")
         return None
 
+def load_station_inventory():
+    """
+    Lädt die Datei ghcnd-inventory.txt, die für jede Station das verfügbare Jahr angibt.
+    Gibt ein Dictionary zurück: {Station_ID: {"TMAX": (Startjahr, Endjahr), "TMIN": (Startjahr, Endjahr)}}
+    """
+    url = "https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/ghcnd-inventory.txt"
+    response = requests.get(url)
+        
+    if response.status_code != 200:
+        print("Fehler beim Laden der Inventardatei")
+        return None
+
+    inventory = {}
+        
+    # Datei Zeile für Zeile verarbeiten
+    for line in response.text.splitlines():
+        station_id = line[:11].strip()  # Station ID
+        element = line[31:35].strip()   # Wettervariable (z.B. TMAX, TMIN)
+        start_year = int(line[36:40])   # Erstes Jahr mit Daten
+        end_year = int(line[41:45])     # Letztes Jahr mit Daten
+
+        # Nur TMAX oder TMIN relevant
+        if element in ["TMAX", "TMIN"]:
+            if station_id not in inventory:
+                inventory[station_id] = {}
+
+            # Speichere Start- und Endjahr für TMAX und TMIN getrennt
+            if element in inventory[station_id]:
+                # Aktualisiere den frühesten Start und spätesten Endzeitpunkt
+                inventory[station_id][element] = (
+                    min(inventory[station_id][element][0], start_year),
+                    max(inventory[station_id][element][1], end_year)
+                )
+            else:
+                inventory[station_id][element] = (start_year, end_year)
+
+    return inventory
 
 def haversine_distance(lat1, lon1, lat2, lon2):
     """
@@ -58,13 +95,19 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     return distance
 
 
-def find_nearest_stations(user_lat, user_lon, radius, max_stations, json_data):
+def find_nearest_stations(user_lat, user_lon, radius, max_stations, json_data, start_year, end_year, inventory):
     """
-    user_lat: Eingabe Breitengrad des Users
-    user_lon: Eingabe Längengrad des Users
-    radius: Eingabe radius des Users
-    max_stations: Anzahl anzuzeigender Stationen. Eingabe des Users
-    json_data: JSON Daten der Stationen
+    Sucht die nächsten Wetterstationen basierend auf Koordinaten und prüft,
+    ob die Station Daten für das Start- und Endjahr enthält.
+
+    user_lat: Breitengrad des Users
+    user_lon: Längengrad des Users
+    radius: Maximaler Suchradius in km
+    max_stations: Maximale Anzahl zurückzugebender Stationen
+    json_data: JSON-Daten der Stationen
+    start_year: Startjahr der Wetterdaten
+    end_year: Endjahr der Wetterdaten
+    inventory: Dictionary {Station_ID: (Startjahr, Endjahr)}
     """
     stations = json_data
     nearby_stations = [] # Liste für die n nächsten Stationen
@@ -73,11 +116,25 @@ def find_nearest_stations(user_lat, user_lon, radius, max_stations, json_data):
     for station in stations:
         station_lat = station["Latitude"]
         station_lon = station["Longitude"]
-        distance = haversine_distance(user_lat, user_lon, station_lat, station_lon)
-        if distance <= radius:
-            station_copy = station.copy()
-            station_copy["Distance"] = distance
-            nearby_stations.append(station_copy)
+        station_id = station["ID"]
+        
+        
+        # Prüfen ob die Station in der Inventardatei enthalten ist
+        if station_id in inventory:
+            station_data = inventory[station_id]
+
+            # Prüfen ob die Station TMIN und TMAX für den Zeitraum hat
+            if "TMAX" in station_data and "TMIN" in station_data:
+                tmax_start, tmax_end = station_data["TMAX"]
+                tmin_start, tmin_end = station_data["TMIN"]
+                # Prüfen, ob beide Variablen den Zeitraum abdecken
+                if tmax_start <= start_year and tmax_end >= end_year and tmin_start <= start_year and tmin_end >= end_year:
+                    distance = haversine_distance(user_lat, user_lon, station_lat, station_lon)
+
+                    if distance <= radius:
+                        station_copy = station.copy()
+                        station_copy["Distance"] = distance
+                        nearby_stations.append(station_copy)
 
     nearby_stations.sort(key=lambda x: x["Distance"])# Das lambda gibt an, dass die Liste nach dem Wert des Schlüssels "Distance" in jedem Dictionary sortiert wird.
     result = nearby_stations[:max_stations]
@@ -331,6 +388,13 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
 
 
 if __name__ == "__main__":
+
+    stations = load_stations_data()
+    inv = load_station_inventory()
+    print(f"Anzahl der Stationen mit TMAX und TMIN: {len(inv)}")
+    print(list(inv.items())[:10])  # Zeigt die ersten 10 Einträge an
+    print(find_nearest_stations(48.0594, 8.4641, 100, 3, stations, 2016, 2017, inv))
+    """
     try:
         stations = load_stations_data()
         if stations is not None:
@@ -343,3 +407,4 @@ if __name__ == "__main__":
                 print(result)
     except Exception as e:
         print(f"Fehler: {e}")
+        """
