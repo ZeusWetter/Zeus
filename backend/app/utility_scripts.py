@@ -2,18 +2,26 @@ import requests, math
 import pandas as pd
 import numpy as np
 import json
+import os
 from io import StringIO
 from collections import OrderedDict
-from datetime import datetime
 
 # in folgender Funktion werden die Daten der
 # Wetterstationen in eine JSON Datei eingelesen
 def load_stations_data():
+    """
+    Lädt die Stationsdaten herunter und speichert sie in einer JSON unter data/stations.json
+
+    Rückgabe: True / False im Bezug auf erolgreiche Durchführung
+    """
     url = "https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/ghcnd-stations.txt"
     file_path = "data/stations.json"
+
+    # Verzeichnis prüfen und erstellen, falls es nicht existiert
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
     response = requests.get(url)
     if response.status_code == 200:
-        print("Datenzugriff war erfolgreich")
         # Die einzelnen Spalten benennen
         columns = ["ID", "Latitude", "Longitude", "Elevation", "State", "Name"]
         # Start- und Endpositionen der Spalten im Fixed-Width Format angeben
@@ -21,24 +29,39 @@ def load_stations_data():
         # Daten in einem Data Frame speichern
         stations = pd.read_fwf(StringIO(response.text), colspecs=colspecs, header=None, names=columns)
         # Die Daten in eine JSON-Datei speichern
-        # stations.to_json(file_path, orient="records", indent=4)
-        # print(f"Daten erfolgreich in {file_path} gespeichert")
-        return stations.to_dict(orient="records") # Data Frame wird in eine Liste von Dictionaries umgewandelt
+        stations.to_json(file_path, orient="records", indent=4)
+        return True # Funktion gibt True zurück wenn die Daten erfolgreich gespeichert werden konnten
     else:
         print(f"Fehler beim Herunterladen der Datei: {response.status_code}")
-        return None
+        return False # False signalisiert hier, dass die Daten nicht erfolgreich gespeichert werden konnten
+
+def load_stations_from_file():
+    """
+    Diese Funktion öffnet die JSON Datei stations.json und gibt diese als Dictionary zurück.
+
+    Rückgabe: Dictionary mit den Stationsdaten
+    """
+    file_path = "data/stations.json"
+    try:
+        with open(file_path, "r", encoding="utf-8") as file:
+            return json.load(file)  # JSON in ein Dictionary umwandeln
+    except FileNotFoundError:
+        print(f"Fehler: Datei {file_path} nicht gefunden.")
+        return {}
 
 def load_station_inventory():
     """
-    Lädt die Datei ghcnd-inventory.txt, die für jede Station das verfügbare Jahr angibt.
-    Gibt ein Dictionary zurück: {Station_ID: {"TMAX": (Startjahr, Endjahr), "TMIN": (Startjahr, Endjahr)}}
+    Lädt die Inventardaten der Stationen herunter und speichert sie in einer JSON unter data/inventory.json
+
+    Rückgabe: True / False im Bezug auf erolgreiche Durchführung
     """
     url = "https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/ghcnd-inventory.txt"
     response = requests.get(url)
+    file_path = "data/inventory.json"
         
     if response.status_code != 200:
         print("Fehler beim Laden der Inventardatei")
-        return None
+        return False # Zeigt an dass die Daten nicht gespeichert werden konnten
 
     inventory = {}
         
@@ -64,14 +87,37 @@ def load_station_inventory():
             else:
                 inventory[station_id][element] = (start_year, end_year)
 
-    return inventory
+    # Verzeichnis prüfen und erstellen, falls nicht vorhanden
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
+    # Speichern als JSON-Datei
+    with open(file_path, "w", encoding="utf-8") as json_file:
+        json.dump(inventory, json_file, indent=4)
+
+    return True # True gibt an dass die Daten erfolgreich gespeichert wurden
+
+def load_inventory_from_file():
+    """
+    Diese Funktion öffnet die JSON Datei inventory.json und gibt diese als Dictionary zurück.
+
+    Rückgabe: Dictionary mit Inventardaten der Stationen
+    """
+    file_path = "data/inventory.json"
+    try:
+        with open(file_path, "r", encoding="utf-8") as file:
+            return json.load(file)  # JSON in ein Dictionary umwandeln
+    except FileNotFoundError:
+        print(f"Fehler: Datei {file_path} nicht gefunden.")
+        return {}
+    
 def haversine_distance(lat1, lon1, lat2, lon2):
     """
     lat1: Breitengrad Punkt 1
     lon1: Längengrad Punkt 1
     lat2: Breitengrad Punkt 2
     lon2: Längengrad Punkt 2
+
+    Rückgabe: Entfernung der Koordinaten in km
     """
     # Diese Funktion berechnet den Abstand zwischen 2 Punkten mit der Haversine-Formel.
     earth_radius = 6371.0 # Radius der Erde in km
@@ -95,7 +141,7 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     return distance
 
 
-def find_nearest_stations(user_lat, user_lon, radius, max_stations, json_data, start_year, end_year, inventory):
+def find_nearest_stations(user_lat, user_lon, radius, max_stations, start_year, end_year):
     """
     Sucht die nächsten Wetterstationen basierend auf Koordinaten und prüft,
     ob die Station Daten für das Start- und Endjahr enthält.
@@ -104,12 +150,13 @@ def find_nearest_stations(user_lat, user_lon, radius, max_stations, json_data, s
     user_lon: Längengrad des Users
     radius: Maximaler Suchradius in km
     max_stations: Maximale Anzahl zurückzugebender Stationen
-    json_data: JSON-Daten der Stationen
     start_year: Startjahr der Wetterdaten
     end_year: Endjahr der Wetterdaten
-    inventory: Dictionary {Station_ID: (Startjahr, Endjahr)}
+
+    Rückgabe: Dictionary mit den X nächstgelegensten Stationen
     """
-    stations = json_data
+    stations = load_stations_from_file()
+    inventory = load_inventory_from_file()
     nearby_stations = [] # Liste für die n nächsten Stationen
 
     # Iteration über alle Stationen in der Liste stations um den Abstand zu berechnen. Dies geschieht über die haversine_distance Funktion
@@ -145,6 +192,8 @@ def download_weather_data(station_id, start_year, end_year):
     station_id: ID der Wetterstation. Beispiel Villingen-Schwenningen = "GME00129634"})
     start_year: Startjahr im Format "YYYY"
     end_year: Endjahr im Format "YYYY"
+
+    Rückgabe: Wetterdaten einer einzelnen Station
     """
     url = f"https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/all/{station_id}.dly"
     
@@ -186,12 +235,14 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
     """
     Berechnet die durchschnittlichen Maximal- und Minimaltemperaturen
     für das gesamte Jahr sowie für jede Jahreszeit basierend auf den übergebenen Wetterdaten.
-    
     Berücksichtigt dabei, dass der Dezember eines Jahres zur Winterperiode
     des folgenden Jahres gezählt wird. Ignoriert die ersten 11 Monate des ersten Jahres.
+    Berücksichtigt außerdem die Jahreszeiten nach Erdhälften
     
-    station_json_data: JSON mit Temperaturwerten einer Wetterstation
+    station_weather_data: Dictionary mit Temperaturwerten einer Wetterstation aus der Funktion download_weather_data()
     first_year: Erstes Jahr, dessen Januar bis November ignoriert wird
+    last_year: Letztes Jahr, wichtig um sicherzustellen dass der Dezember des letzten Jahres keinen neuen Winter-Eintrag erstellt
+    latitude: Breitengrad um die Wetterstationen den Erdhälften zuzuordnen
     
     Rückgabe: JSON mit Durchschnittswerten für das Jahr und die Jahreszeiten
     """
@@ -389,11 +440,20 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
 
 if __name__ == "__main__":
 
-    stations = load_stations_data()
-    inv = load_station_inventory()
+    """
+    print(load_stations_from_file())
+    print(load_inventory_from_file())
+    print(find_nearest_stations(48.0594, 8.4641, 100, 3, 2015, 2018))
+    """
+
+    """
+    stations = load_stations_from_file()
+    inv = load_inventory_from_file()
     print(f"Anzahl der Stationen mit TMAX und TMIN: {len(inv)}")
     print(list(inv.items())[:10])  # Zeigt die ersten 10 Einträge an
-    print(find_nearest_stations(48.0594, 8.4641, 100, 3, stations, 2016, 2017, inv))
+    print(find_nearest_stations(48.0594, 8.4641, 100, 3, 2016, 2017))
+    """
+
     """
     try:
         stations = load_stations_data()
