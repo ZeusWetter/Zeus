@@ -1,8 +1,6 @@
-from fastapi import FastAPI, File, Body
-import requests
-import json
-from utility_scripts import find_nearest_stations
-import logging
+from fastapi import FastAPI, HTTPException
+from typing import List
+from utility_scripts import load_stations_from_file, load_inventory_from_file, find_nearest_stations, download_weather_data, calculate_means
 
 app = FastAPI()
 
@@ -10,16 +8,48 @@ app = FastAPI()
 async def root():
     return {"message": "Hello World"}
 
-@app.get("/stations-in-range")
-async def get_stations_in_range(latitude: float, longitude: float, range_km: int, max_stations: int):
+@app.get("/nearest-stations", response_model=List[dict]) # API wurde in einem Beispiel getestet
+async def get_nearest_stations(latitude: float, 
+                               longitude: float, 
+                               radius: int, 
+                               max_stations: int,
+                               start_year: int,
+                               end_year: int
+                               ):
+    # Stationsliste und Inventarsliste der Stationen werden aufgerufen und zugewiesen
     try:
-        with open("data/stations.json", "r") as f:
-            data = json.loads(f.read())
-            nearest_stations = []
-            nearest_stations = find_nearest_stations(user_lat=latitude,user_lon=longitude,radius=range_km,max_stations=max_stations,json_data=data)
+        stations = load_stations_from_file()
+        inventory = load_inventory_from_file()
+        
+        if not stations or not inventory:
+            raise HTTPException(status_code=500, detail="Fehler beim Laden der Stations- oder Inventardaten")
+        
+        # Die nächsten Stationen werden basierend auf den Daten von stations und inventory, sowie der User-Eingabe berechnet.
+        result = find_nearest_stations(latitude, longitude, radius, max_stations, start_year, end_year)
 
-    except FileNotFoundError as e:
-        logging.error("Error: " + str(e))
-        return {"error": "File not found."}, 404
+        # Die nächsten Stationen werden nun zurückgegeben
+        if not result:
+            raise HTTPException(status_code=404, detail="Keine passenden Stationen gefunden")
+        return result
+    except HTTPException as http_err:
+        raise http_err  # Weiterreichen spezifischer HTTP-Fehler
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Interner Serverfehler: {str(e)}")
 
-    return {"data": nearest_stations}
+
+@app.get("/weather-data/{station_id}", response_model=dict)
+async def get_weather_data(station_id: str,
+                           start_year: int,
+                           end_year: int,
+                           latitude: float):
+    try:
+        # download_weather_data(station_id, start_year, end_year) wird ausgeführt um die Wetterdaten der Station zu speichern
+        station_data = download_weather_data(station_id, start_year, end_year)
+        # calculate_means(station_weather_data, first_year, last_year, latitude) wird ausgeführt
+        processed_data = calculate_means(station_data, start_year, end_year, latitude)
+        # die berechneten Mittelwerte werden zurückgegeben
+        return processed_data
+    except HTTPException as http_err:
+        raise http_err
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Interner Serverfehler: {str(e)}")
