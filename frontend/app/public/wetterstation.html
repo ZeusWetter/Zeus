@@ -218,9 +218,12 @@
                         start_year: startYearVal,
                         end_year: endYearVal,
                     };
-                    const { data } = await axios.get(`${API_URL}/weather`, {
-                        params,
-                    });
+                    const { data } = await axios.get(
+                        `${API_URL}/nearest-stations`,
+                        {
+                            params,
+                        },
+                    );
                     console.log("Nearest Stations:", data);
                     const validStations = data;
                 } catch (error) {
