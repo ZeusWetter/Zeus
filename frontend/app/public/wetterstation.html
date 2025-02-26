@@ -175,10 +175,10 @@
             <div id="map"></div>
         </div>
 
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
         <script>
-            import axios from 'axios';
-
-            const API_URL = process.env.WEB_APP_API_URL ||"http://backend:8000";
+            const API_URL =
+                process.env.WEB_APP_API_URL || "http://backend:8000";
 
             let map;
             let circleLayer;
@@ -187,216 +187,274 @@
 
             // Initialisiere die Karte und setze den maximalen Wert für Endjahr dynamisch
             function initMap() {
-              map = L.map('map').setView([51.1657, 10.4515], 6);
-              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '© OpenStreetMap-Mitwirkende'
-              }).addTo(map);
+                map = L.map("map").setView([51.1657, 10.4515], 6);
+                L.tileLayer(
+                    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                    {
+                        maxZoom: 19,
+                        attribution: "© OpenStreetMap-Mitwirkende",
+                    },
+                ).addTo(map);
 
-              // Dynamisch den Maximalwert für Endjahr setzen (aktuelles Jahr - 1)
-              const maxEndYear = new Date().getFullYear() - 1;
-              document.getElementById("endYear").max = maxEndYear;
+                // Dynamisch den Maximalwert für Endjahr setzen (aktuelles Jahr - 1)
+                const maxEndYear = new Date().getFullYear() - 1;
+                document.getElementById("endYear").max = maxEndYear;
+            }
+
+            // Frage die Stationen beim Backend an
+            async function fetchWeatherData(
+                latitudeVal,
+                longitudeVal,
+                radiusVal,
+                maxStationsVal,
+                startYearVal,
+                endYearVal,
+            ) {
+                try {
+                    const params = {
+                        latitude: latitudeVal,
+                        longitude: longitudeVal,
+                        radius: radiusVal,
+                        max_stations: maxStationsVal,
+                        start_year: startYearVal,
+                        end_year: endYearVal,
+                    };
+                    const { data } = await axios.get(`${API_URL}/weather`, {
+                        params,
+                    });
+                    console.log("Nearest Stations:", data);
+                    const validStations = data;
+                } catch (error) {
+                    console.error(
+                        "Error fetching weather data:",
+                        error.response?.data || error.message,
+                    );
+                }
+                return validStations;
             }
 
             // Validierung aller Eingaben vor der Suche
             function validateInputs() {
-              // Längenkoordinate
-              const longitudeVal = document.getElementById("longitude").value;
-              if (longitudeVal === "") {
-                alert("Bitte geben Sie einen Wert für die Längenkoordinate ein.");
-                return false;
-              }
-              const lng = parseFloat(longitudeVal);
-              if (lng < -180 || lng > 180) {
-                alert("Die Längenkoordinate muss zwischen -180 und 180 liegen.");
-                return false;
-              }
+                // Längenkoordinate
+                const longitudeVal = document.getElementById("longitude").value;
+                if (longitudeVal === "") {
+                    alert(
+                        "Bitte geben Sie einen Wert für die Längenkoordinate ein.",
+                    );
+                    return false;
+                }
+                const lng = parseFloat(longitudeVal);
+                if (lng < -180 || lng > 180) {
+                    alert(
+                        "Die Längenkoordinate muss zwischen -180 und 180 liegen.",
+                    );
+                    return false;
+                }
 
-              // Breitenkoordinate
-              const latitudeVal = document.getElementById("latitude").value;
-              if (latitudeVal === "") {
-                alert("Bitte geben Sie einen Wert für die Breitenkoordinate ein.");
-                return false;
-              }
-              const lat = parseFloat(latitudeVal);
-              if (lat < -90 || lat > 90) {
-                alert("Die Breitenkoordinate muss zwischen -90 und 90 liegen.");
-                return false;
-              }
+                // Breitenkoordinate
+                const latitudeVal = document.getElementById("latitude").value;
+                if (latitudeVal === "") {
+                    alert(
+                        "Bitte geben Sie einen Wert für die Breitenkoordinate ein.",
+                    );
+                    return false;
+                }
+                const lat = parseFloat(latitudeVal);
+                if (lat < -90 || lat > 90) {
+                    alert(
+                        "Die Breitenkoordinate muss zwischen -90 und 90 liegen.",
+                    );
+                    return false;
+                }
 
-              // Suchradius
-              const radiusVal = document.getElementById("radius").value;
-              if (radiusVal === "") {
-                alert("Bitte geben Sie einen Wert für den Suchradius ein.");
-                return false;
-              }
-              const radiusKm = parseFloat(radiusVal);
-              if (isNaN(radiusKm) || radiusKm <= 0) {
-                alert("Der Suchradius muss größer als 0 sein.");
-                return false;
-              }
+                // Suchradius
+                const radiusVal = document.getElementById("radius").value;
+                if (radiusVal === "") {
+                    alert("Bitte geben Sie einen Wert für den Suchradius ein.");
+                    return false;
+                }
+                const radiusKm = parseFloat(radiusVal);
+                if (isNaN(radiusKm) || radiusKm <= 0) {
+                    alert("Der Suchradius muss größer als 0 sein.");
+                    return false;
+                }
 
-              // maxStations
-              const maxStationsVal = document.getElementById("maxStations").value;
-              if (maxStationsVal === "") {
-                alert("Bitte geben Sie einen Wert für die maximale Anzahl an Stationen ein.");
-                return false;
-              }
-              const maxStations = parseInt(maxStationsVal);
-              if (isNaN(maxStations) || maxStations < 1) {
-                alert("Die maximale Anzahl an Stationen muss mindestens 1 betragen.");
-                return false;
-              }
+                // maxStations
+                const maxStationsVal =
+                    document.getElementById("maxStations").value;
+                if (maxStationsVal === "") {
+                    alert(
+                        "Bitte geben Sie einen Wert für die maximale Anzahl an Stationen ein.",
+                    );
+                    return false;
+                }
+                const maxStations = parseInt(maxStationsVal);
+                if (isNaN(maxStations) || maxStations < 1) {
+                    alert(
+                        "Die maximale Anzahl an Stationen muss mindestens 1 betragen.",
+                    );
+                    return false;
+                }
 
-              // Startjahr
-              const startYearVal = document.getElementById("startYear").value;
-              if (startYearVal === "") {
-                alert("Bitte geben Sie ein Startjahr ein.");
-                return false;
-              }
-              const startYear = parseInt(startYearVal);
-              if (isNaN(startYear)) {
-                alert("Bitte geben Sie ein gültiges Startjahr ein.");
-                return false;
-              }
+                // Startjahr
+                const startYearVal = document.getElementById("startYear").value;
+                if (startYearVal === "") {
+                    alert("Bitte geben Sie ein Startjahr ein.");
+                    return false;
+                }
+                const startYear = parseInt(startYearVal);
+                if (isNaN(startYear)) {
+                    alert("Bitte geben Sie ein gültiges Startjahr ein.");
+                    return false;
+                }
 
-              // Endjahr
-              const endYearVal = document.getElementById("endYear").value;
-              if (endYearVal === "") {
-                alert("Bitte geben Sie ein Endjahr ein.");
-                return false;
-              }
-              const endYear = parseInt(endYearVal);
-              const maxAllowedEndYear = new Date().getFullYear() - 1;
-              if (isNaN(endYear) || endYear > maxAllowedEndYear) {
-                alert("Das Endjahr darf höchstens " + maxAllowedEndYear + " betragen.");
-                return false;
-              }
+                // Endjahr
+                const endYearVal = document.getElementById("endYear").value;
+                if (endYearVal === "") {
+                    alert("Bitte geben Sie ein Endjahr ein.");
+                    return false;
+                }
+                const endYear = parseInt(endYearVal);
+                const maxAllowedEndYear = new Date().getFullYear() - 1;
+                if (isNaN(endYear) || endYear > maxAllowedEndYear) {
+                    alert(
+                        "Das Endjahr darf höchstens " +
+                            maxAllowedEndYear +
+                            " betragen.",
+                    );
+                    return false;
+                }
 
-              // Überprüfe, ob das Startjahr kleiner oder gleich dem Endjahr ist
-              if (startYear > endYear) {
-                alert("Das Startjahr muss kleiner oder gleich dem Endjahr sein.");
-                return false;
-              }
+                // Überprüfe, ob das Startjahr kleiner oder gleich dem Endjahr ist
+                if (startYear > endYear) {
+                    alert(
+                        "Das Startjahr muss kleiner oder gleich dem Endjahr sein.",
+                    );
+                    return false;
+                }
 
-              return true;
+                return true;
             }
 
             // Suchen von Wetterstationen (Simulation des Suchradius)
             function searchStations() {
-              if (!validateInputs()) {
-                return;
-              }
+                if (!validateInputs()) {
+                    return;
+                }
 
-              const lat = parseFloat(document.getElementById("latitude").value);
-              const lng = parseFloat(document.getElementById("longitude").value);
-              const radius = parseFloat(document.getElementById("radius").value) * 1000; // Umrechnung in Meter
-              const maxStations = parseInt(document.getElementById("maxStations").value);
-
-              // Entferne vorhandene Elemente
-              if (circleLayer) {
-                map.removeLayer(circleLayer);
-              }
-              if (centerMarker) {
-                map.removeLayer(centerMarker);
-              }
-              if (stationMarkers.length > 0) {
-                stationMarkers.forEach(function(marker) {
-                  map.removeLayer(marker);
-                });
-                stationMarkers = [];
-              }
-
-              // Zeichne den Suchradius als Kreis
-              circleLayer = L.circle([lat, lng], {
-                color: 'red',
-                fillColor: '#f03',
-                fillOpacity: 0.3,
-                radius: radius
-              }).addTo(map);
-
-              // Markiere die Mitte des Suchradius (Popup wird nicht automatisch geöffnet)
-              centerMarker = L.marker([lat, lng]).addTo(map)
-                .bindPopup("Mitte des Suchradius");
-
-              // Passe den Zoom so an, dass der gesamte Suchradius sichtbar ist
-              map.fitBounds(circleLayer.getBounds());
-
-              // Simulierte Stationen
-              const stations = [
-                { name: "Wetterstation Freiburg", lat: 47.9978, lng: 7.8421 },
-                { name: "Wetterstation Stuttgart", lat: 48.7758, lng: 9.1829 },
-                { name: "Wetterstation Villingen-Schwenningen", lat: 48.0656, lng: 8.5044 }
-              ];
-
-              // Frage die Stationen beim Backend an
-              try {
-                const params = {
-                  latitude: latitudeVal,
-                  longitude: longitudeVal,
-                  radius: radiusVal,
-                  max_stations: maxStationsVal,
-                  start_year: startYearVal,
-                  end_year: endYearVal
-                };
-                const { data } = await axios.get(`${API_URL}/weather`, { params });
-                  console.log('Nearest Stations:', data);
-                  const validStations = data;
-                } catch (error) {
-                  console.error('Error fetching weather data:', error.response?.data || error.message);
-              }
-
-
-              // Definiere das benutzerdefinierte Icon
-              const thermoIcon = L.icon({
-                iconUrl: 'thermometer.png',
-                iconSize: [32, 32],
-                iconAnchor: [16, 16],
-                popupAnchor: [0, -16]
-              });
-
-              // Füge die ausgewählten Stationen als Marker hinzu
-              validStations.forEach(function(station) {
-                const marker = L.marker([station.Latitude, station.Longitude], { icon: thermoIcon }).addTo(map);
-
-                // Tooltip beim Hover mit Stationsdaten
-                marker.bindTooltip(
-                  station.Name + "<br>" +
-                  "Koordinaten: " + station.Latitude.toFixed(4) + ", " + station.Longitude.toFixed(4) + "<br>" +
-                  "Entfernung: " + (station.Distance / 1000).toFixed(2) + " km"
+                const lat = parseFloat(
+                    document.getElementById("latitude").value,
+                );
+                const lng = parseFloat(
+                    document.getElementById("longitude").value,
+                );
+                const radius =
+                    parseFloat(document.getElementById("radius").value) * 1000; // Umrechnung in Meter
+                const maxStations = parseInt(
+                    document.getElementById("maxStations").value,
                 );
 
-                // Beim Klick auf den Marker Weiterleitung zu "Graph_v2.html"
-                marker.on('click', function() {
-                  window.location.href = "station_v2.html?station=" + encodeURIComponent(station.name);
+                // Entferne vorhandene Elemente
+                if (circleLayer) {
+                    map.removeLayer(circleLayer);
+                }
+                if (centerMarker) {
+                    map.removeLayer(centerMarker);
+                }
+                if (stationMarkers.length > 0) {
+                    stationMarkers.forEach(function (marker) {
+                        map.removeLayer(marker);
+                    });
+                    stationMarkers = [];
+                }
+
+                // Zeichne den Suchradius als Kreis
+                circleLayer = L.circle([lat, lng], {
+                    color: "red",
+                    fillColor: "#f03",
+                    fillOpacity: 0.3,
+                    radius: radius,
+                }).addTo(map);
+
+                // Markiere die Mitte des Suchradius (Popup wird nicht automatisch geöffnet)
+                centerMarker = L.marker([lat, lng])
+                    .addTo(map)
+                    .bindPopup("Mitte des Suchradius");
+
+                // Passe den Zoom so an, dass der gesamte Suchradius sichtbar ist
+                map.fitBounds(circleLayer.getBounds());
+
+                const stations = fetchWeatherData(
+                    latitudeVal,
+                    longitudeVal,
+                    radiusVal,
+                    maxStationsVal,
+                    startYearVal,
+                    endYearVal,
+                );
+
+                // Definiere das benutzerdefinierte Icon
+                const thermoIcon = L.icon({
+                    iconUrl: "thermometer.png",
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16],
+                    popupAnchor: [0, -16],
                 });
 
-                stationMarkers.push(marker);
-              });
+                // Füge die ausgewählten Stationen als Marker hinzu
+                stations.forEach(function (station) {
+                    const marker = L.marker(
+                        [station.Latitude, station.Longitude],
+                        { icon: thermoIcon },
+                    ).addTo(map);
+
+                    // Tooltip beim Hover mit Stationsdaten
+                    marker.bindTooltip(
+                        station.Name +
+                            "<br>" +
+                            "Koordinaten: " +
+                            station.Latitude.toFixed(4) +
+                            ", " +
+                            station.Longitude.toFixed(4) +
+                            "<br>" +
+                            "Entfernung: " +
+                            (station.Distance / 1000).toFixed(2) +
+                            " km",
+                    );
+
+                    // Beim Klick auf den Marker Weiterleitung zu "Graph_v2.html"
+                    marker.on("click", function () {
+                        window.location.href =
+                            "station_v2.html?station=" +
+                            encodeURIComponent(station.name);
+                    });
+
+                    stationMarkers.push(marker);
+                });
             }
 
             // Zurücksetzen der Eingabefelder und der Karte
             function resetFields() {
-              document.getElementById("longitude").value = "";
-              document.getElementById("latitude").value = "";
-              document.getElementById("radius").value = "";
-              document.getElementById("maxStations").value = "";
-              document.getElementById("startYear").value = "";
-              document.getElementById("endYear").value = "";
+                document.getElementById("longitude").value = "";
+                document.getElementById("latitude").value = "";
+                document.getElementById("radius").value = "";
+                document.getElementById("maxStations").value = "";
+                document.getElementById("startYear").value = "";
+                document.getElementById("endYear").value = "";
 
-              if (circleLayer) {
-                map.removeLayer(circleLayer);
-              }
-              if (centerMarker) {
-                map.removeLayer(centerMarker);
-              }
-              if (stationMarkers.length > 0) {
-                stationMarkers.forEach(function(marker) {
-                  map.removeLayer(marker);
-                });
-                stationMarkers = [];
-              }
-              map.setView([51.1657, 10.4515], 6);
+                if (circleLayer) {
+                    map.removeLayer(circleLayer);
+                }
+                if (centerMarker) {
+                    map.removeLayer(centerMarker);
+                }
+                if (stationMarkers.length > 0) {
+                    stationMarkers.forEach(function (marker) {
+                        map.removeLayer(marker);
+                    });
+                    stationMarkers = [];
+                }
+                map.setView([51.1657, 10.4515], 6);
             }
 
             window.onload = initMap;
