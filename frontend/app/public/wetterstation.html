@@ -1,366 +1,405 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ZEUS-Wetterstationen</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #333;
-      color: #fff;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      padding: 20px;
-    }
-    .header {
-      font-size: 32px;
-      font-weight: bold;
-      margin-bottom: 20px;
-    }
-    /* Vier Container in einer Zeile: drei Input-Gruppen und ein Button-Container */
-    .input-row {
-      display: flex;
-      gap: 20px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-      align-items: flex-start;
-    }
-    /* Jeder Input-Container: vertikale Anordnung der Zeilen */
-    .input-container {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    /* Jede Zeile: Label und Eingabefeld in einer Zeile */
-    .input-line {
-      display: flex;
-      align-items: center;
-    }
-    .input-line label {
-      /* Feste Breite sorgt dafür, dass alle Labels gleich lang erscheinen */
-      flex: 0 0 130px;
-      margin-right: 10px;
-      font-size: 14px;
-    }
-    .input-line input[type="number"],
-    .input-line input[type="text"] {
-      padding: 8px;
-      border: 1px solid #666;
-      border-radius: 4px;
-      background-color: #444;
-      color: #fff;
-      width: 140px;
-    }
-    /* Container für die Buttons */
-    .button-container {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      /* Schiebt diesen Container an den rechten Rand */
-      margin-left: auto;
-    }
-    button {
-      padding: 8px 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-      min-width: 150px;
-    }
-    /* Such-Button: kräftigerer Ton */
-    button.search {
-      background-color: #555;
-      border: none;
-      color: #fff;
-    }
-    /* Zurücksetzen-Button: transparenter */
-    button.reset {
-      background-color: rgba(255, 255, 255, 0.1);
-      border: 1px solid #aaa;
-      color: #fff;
-    }
-    #map {
-      width: 100%;
-      height: 600px;
-      border: 1px solid #666;
-      border-radius: 4px;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">ZEUS-Wetterstationen</div>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ZEUS-Wetterstationen</title>
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #333;
+                color: #fff;
+                margin: 0;
+                padding: 0;
+            }
+            .container {
+                padding: 20px;
+            }
+            .header {
+                font-size: 32px;
+                font-weight: bold;
+                margin-bottom: 20px;
+            }
+            /* Vier Container in einer Zeile: drei Input-Gruppen und ein Button-Container */
+            .input-row {
+                display: flex;
+                gap: 20px;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+                align-items: flex-start;
+            }
+            /* Jeder Input-Container: vertikale Anordnung der Zeilen */
+            .input-container {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            /* Jede Zeile: Label und Eingabefeld in einer Zeile */
+            .input-line {
+                display: flex;
+                align-items: center;
+            }
+            .input-line label {
+                /* Feste Breite sorgt dafür, dass alle Labels gleich lang erscheinen */
+                flex: 0 0 130px;
+                margin-right: 10px;
+                font-size: 14px;
+            }
+            .input-line input[type="number"],
+            .input-line input[type="text"] {
+                padding: 8px;
+                border: 1px solid #666;
+                border-radius: 4px;
+                background-color: #444;
+                color: #fff;
+                width: 140px;
+            }
+            /* Container für die Buttons */
+            .button-container {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                /* Schiebt diesen Container an den rechten Rand */
+                margin-left: auto;
+            }
+            button {
+                padding: 8px 16px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+                min-width: 150px;
+            }
+            /* Such-Button: kräftigerer Ton */
+            button.search {
+                background-color: #555;
+                border: none;
+                color: #fff;
+            }
+            /* Zurücksetzen-Button: transparenter */
+            button.reset {
+                background-color: rgba(255, 255, 255, 0.1);
+                border: 1px solid #aaa;
+                color: #fff;
+            }
+            #map {
+                width: 100%;
+                height: 600px;
+                border: 1px solid #666;
+                border-radius: 4px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">ZEUS-Wetterstationen</div>
 
-    <!-- Vier Container in einer Zeile: drei Input-Gruppen und ein Button-Container -->
-    <div class="input-row">
-      <!-- Erster Container: Längenkoordinate und Breitenkoordinate -->
-      <div class="input-container">
-        <div class="input-line">
-          <label for="longitude">Längenkoordinate:</label>
-          <input type="number" id="longitude" placeholder="Eingabe" min="-180" max="180">
+            <!-- Vier Container in einer Zeile: drei Input-Gruppen und ein Button-Container -->
+            <div class="input-row">
+                <!-- Erster Container: Längenkoordinate und Breitenkoordinate -->
+                <div class="input-container">
+                    <div class="input-line">
+                        <label for="longitude">Längenkoordinate:</label>
+                        <input
+                            type="number"
+                            id="longitude"
+                            placeholder="Eingabe"
+                            min="-180"
+                            max="180"
+                        />
+                    </div>
+                    <div class="input-line">
+                        <label for="latitude">Breitenkoordinate:</label>
+                        <input
+                            type="number"
+                            id="latitude"
+                            placeholder="Eingabe"
+                            min="-90"
+                            max="90"
+                        />
+                    </div>
+                </div>
+                <!-- Zweiter Container: Suchradius und Anzahl Stationen -->
+                <div class="input-container">
+                    <div class="input-line">
+                        <label for="radius">Suchradius (km):</label>
+                        <input
+                            type="number"
+                            id="radius"
+                            placeholder="Eingabe"
+                        />
+                    </div>
+                    <div class="input-line">
+                        <label for="maxStations">Anzahl Stationen (max):</label>
+                        <input
+                            type="number"
+                            id="maxStations"
+                            placeholder="Eingabe"
+                        />
+                    </div>
+                </div>
+                <!-- Dritter Container: Startjahr und Endjahr -->
+                <div class="input-container">
+                    <div class="input-line">
+                        <label for="startYear">Startjahr:</label>
+                        <input
+                            type="number"
+                            id="startYear"
+                            placeholder="Eingabe"
+                        />
+                    </div>
+                    <div class="input-line">
+                        <label for="endYear">Endjahr:</label>
+                        <input
+                            type="number"
+                            id="endYear"
+                            placeholder="Eingabe"
+                        />
+                    </div>
+                </div>
+                <!-- Vierter Container: Buttons, an den rechten Rand geschoben -->
+                <div class="button-container">
+                    <button class="search" onclick="searchStations()">
+                        Suche
+                    </button>
+                    <button class="reset" onclick="resetFields()">
+                        Zurücksetzen
+                    </button>
+                </div>
+            </div>
+
+            <div id="map"></div>
         </div>
-        <div class="input-line">
-          <label for="latitude">Breitenkoordinate:</label>
-          <input type="number" id="latitude" placeholder="Eingabe" min="-90" max="90">
-        </div>
-      </div>
-      <!-- Zweiter Container: Suchradius und Anzahl Stationen -->
-      <div class="input-container">
-        <div class="input-line">
-          <label for="radius">Suchradius (km):</label>
-          <input type="number" id="radius" placeholder="Eingabe">
-        </div>
-        <div class="input-line">
-          <label for="maxStations">Anzahl Stationen (max):</label>
-          <input type="number" id="maxStations" placeholder="Eingabe">
-        </div>
-      </div>
-      <!-- Dritter Container: Startjahr und Endjahr -->
-      <div class="input-container">
-        <div class="input-line">
-          <label for="startYear">Startjahr:</label>
-          <input type="number" id="startYear" placeholder="Eingabe">
-        </div>
-        <div class="input-line">
-          <label for="endYear">Endjahr:</label>
-          <input type="number" id="endYear" placeholder="Eingabe">
-        </div>
-      </div>
-      <!-- Vierter Container: Buttons, an den rechten Rand geschoben -->
-      <div class="button-container">
-        <button class="search" onclick="searchStations()">Suche</button>
-        <button class="reset" onclick="resetFields()">Zurücksetzen</button>
-      </div>
-    </div>
 
-    <div id="map"></div>
-  </div>
+        <script>
+            import axios from 'axios';
 
-  <script>
-    let map;
-    let circleLayer;
-    let centerMarker;
-    let stationMarkers = [];
+            const API_URL = process.env.WEB_APP_API_URL ||"http://backend:8000";
 
-    // Initialisiere die Karte und setze den maximalen Wert für Endjahr dynamisch
-    function initMap() {
-      map = L.map('map').setView([51.1657, 10.4515], 6);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap-Mitwirkende'
-      }).addTo(map);
+            let map;
+            let circleLayer;
+            let centerMarker;
+            let stationMarkers = [];
 
-      // Dynamisch den Maximalwert für Endjahr setzen (aktuelles Jahr - 1)
-      const maxEndYear = new Date().getFullYear() - 1;
-      document.getElementById("endYear").max = maxEndYear;
-    }
+            // Initialisiere die Karte und setze den maximalen Wert für Endjahr dynamisch
+            function initMap() {
+              map = L.map('map').setView([51.1657, 10.4515], 6);
+              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap-Mitwirkende'
+              }).addTo(map);
 
-    // Validierung aller Eingaben vor der Suche
-    function validateInputs() {
-      // Längenkoordinate
-      const longitudeVal = document.getElementById("longitude").value;
-      if (longitudeVal === "") {
-        alert("Bitte geben Sie einen Wert für die Längenkoordinate ein.");
-        return false;
-      }
-      const lng = parseFloat(longitudeVal);
-      if (lng < -180 || lng > 180) {
-        alert("Die Längenkoordinate muss zwischen -180 und 180 liegen.");
-        return false;
-      }
+              // Dynamisch den Maximalwert für Endjahr setzen (aktuelles Jahr - 1)
+              const maxEndYear = new Date().getFullYear() - 1;
+              document.getElementById("endYear").max = maxEndYear;
+            }
 
-      // Breitenkoordinate
-      const latitudeVal = document.getElementById("latitude").value;
-      if (latitudeVal === "") {
-        alert("Bitte geben Sie einen Wert für die Breitenkoordinate ein.");
-        return false;
-      }
-      const lat = parseFloat(latitudeVal);
-      if (lat < -90 || lat > 90) {
-        alert("Die Breitenkoordinate muss zwischen -90 und 90 liegen.");
-        return false;
-      }
+            // Validierung aller Eingaben vor der Suche
+            function validateInputs() {
+              // Längenkoordinate
+              const longitudeVal = document.getElementById("longitude").value;
+              if (longitudeVal === "") {
+                alert("Bitte geben Sie einen Wert für die Längenkoordinate ein.");
+                return false;
+              }
+              const lng = parseFloat(longitudeVal);
+              if (lng < -180 || lng > 180) {
+                alert("Die Längenkoordinate muss zwischen -180 und 180 liegen.");
+                return false;
+              }
 
-      // Suchradius
-      const radiusVal = document.getElementById("radius").value;
-      if (radiusVal === "") {
-        alert("Bitte geben Sie einen Wert für den Suchradius ein.");
-        return false;
-      }
-      const radiusKm = parseFloat(radiusVal);
-      if (isNaN(radiusKm) || radiusKm <= 0) {
-        alert("Der Suchradius muss größer als 0 sein.");
-        return false;
-      }
+              // Breitenkoordinate
+              const latitudeVal = document.getElementById("latitude").value;
+              if (latitudeVal === "") {
+                alert("Bitte geben Sie einen Wert für die Breitenkoordinate ein.");
+                return false;
+              }
+              const lat = parseFloat(latitudeVal);
+              if (lat < -90 || lat > 90) {
+                alert("Die Breitenkoordinate muss zwischen -90 und 90 liegen.");
+                return false;
+              }
 
-      // maxStations
-      const maxStationsVal = document.getElementById("maxStations").value;
-      if (maxStationsVal === "") {
-        alert("Bitte geben Sie einen Wert für die maximale Anzahl an Stationen ein.");
-        return false;
-      }
-      const maxStations = parseInt(maxStationsVal);
-      if (isNaN(maxStations) || maxStations < 1) {
-        alert("Die maximale Anzahl an Stationen muss mindestens 1 betragen.");
-        return false;
-      }
+              // Suchradius
+              const radiusVal = document.getElementById("radius").value;
+              if (radiusVal === "") {
+                alert("Bitte geben Sie einen Wert für den Suchradius ein.");
+                return false;
+              }
+              const radiusKm = parseFloat(radiusVal);
+              if (isNaN(radiusKm) || radiusKm <= 0) {
+                alert("Der Suchradius muss größer als 0 sein.");
+                return false;
+              }
 
-      // Startjahr
-      const startYearVal = document.getElementById("startYear").value;
-      if (startYearVal === "") {
-        alert("Bitte geben Sie ein Startjahr ein.");
-        return false;
-      }
-      const startYear = parseInt(startYearVal);
-      if (isNaN(startYear)) {
-        alert("Bitte geben Sie ein gültiges Startjahr ein.");
-        return false;
-      }
+              // maxStations
+              const maxStationsVal = document.getElementById("maxStations").value;
+              if (maxStationsVal === "") {
+                alert("Bitte geben Sie einen Wert für die maximale Anzahl an Stationen ein.");
+                return false;
+              }
+              const maxStations = parseInt(maxStationsVal);
+              if (isNaN(maxStations) || maxStations < 1) {
+                alert("Die maximale Anzahl an Stationen muss mindestens 1 betragen.");
+                return false;
+              }
 
-      // Endjahr
-      const endYearVal = document.getElementById("endYear").value;
-      if (endYearVal === "") {
-        alert("Bitte geben Sie ein Endjahr ein.");
-        return false;
-      }
-      const endYear = parseInt(endYearVal);
-      const maxAllowedEndYear = new Date().getFullYear() - 1;
-      if (isNaN(endYear) || endYear > maxAllowedEndYear) {
-        alert("Das Endjahr darf höchstens " + maxAllowedEndYear + " betragen.");
-        return false;
-      }
+              // Startjahr
+              const startYearVal = document.getElementById("startYear").value;
+              if (startYearVal === "") {
+                alert("Bitte geben Sie ein Startjahr ein.");
+                return false;
+              }
+              const startYear = parseInt(startYearVal);
+              if (isNaN(startYear)) {
+                alert("Bitte geben Sie ein gültiges Startjahr ein.");
+                return false;
+              }
 
-      // Überprüfe, ob das Startjahr kleiner oder gleich dem Endjahr ist
-      if (startYear > endYear) {
-        alert("Das Startjahr muss kleiner oder gleich dem Endjahr sein.");
-        return false;
-      }
+              // Endjahr
+              const endYearVal = document.getElementById("endYear").value;
+              if (endYearVal === "") {
+                alert("Bitte geben Sie ein Endjahr ein.");
+                return false;
+              }
+              const endYear = parseInt(endYearVal);
+              const maxAllowedEndYear = new Date().getFullYear() - 1;
+              if (isNaN(endYear) || endYear > maxAllowedEndYear) {
+                alert("Das Endjahr darf höchstens " + maxAllowedEndYear + " betragen.");
+                return false;
+              }
 
-      return true;
-    }
+              // Überprüfe, ob das Startjahr kleiner oder gleich dem Endjahr ist
+              if (startYear > endYear) {
+                alert("Das Startjahr muss kleiner oder gleich dem Endjahr sein.");
+                return false;
+              }
 
-    // Suchen von Wetterstationen (Simulation des Suchradius)
-    function searchStations() {
-      if (!validateInputs()) {
-        return;
-      }
+              return true;
+            }
 
-      const lat = parseFloat(document.getElementById("latitude").value);
-      const lng = parseFloat(document.getElementById("longitude").value);
-      const radius = parseFloat(document.getElementById("radius").value) * 1000; // Umrechnung in Meter
-      const maxStations = parseInt(document.getElementById("maxStations").value);
+            // Suchen von Wetterstationen (Simulation des Suchradius)
+            function searchStations() {
+              if (!validateInputs()) {
+                return;
+              }
 
-      // Entferne vorhandene Elemente
-      if (circleLayer) {
-        map.removeLayer(circleLayer);
-      }
-      if (centerMarker) {
-        map.removeLayer(centerMarker);
-      }
-      if (stationMarkers.length > 0) {
-        stationMarkers.forEach(function(marker) {
-          map.removeLayer(marker);
-        });
-        stationMarkers = [];
-      }
+              const lat = parseFloat(document.getElementById("latitude").value);
+              const lng = parseFloat(document.getElementById("longitude").value);
+              const radius = parseFloat(document.getElementById("radius").value) * 1000; // Umrechnung in Meter
+              const maxStations = parseInt(document.getElementById("maxStations").value);
 
-      // Zeichne den Suchradius als Kreis
-      circleLayer = L.circle([lat, lng], {
-        color: 'red',
-        fillColor: '#f03',
-        fillOpacity: 0.3,
-        radius: radius
-      }).addTo(map);
+              // Entferne vorhandene Elemente
+              if (circleLayer) {
+                map.removeLayer(circleLayer);
+              }
+              if (centerMarker) {
+                map.removeLayer(centerMarker);
+              }
+              if (stationMarkers.length > 0) {
+                stationMarkers.forEach(function(marker) {
+                  map.removeLayer(marker);
+                });
+                stationMarkers = [];
+              }
 
-      // Markiere die Mitte des Suchradius (Popup wird nicht automatisch geöffnet)
-      centerMarker = L.marker([lat, lng]).addTo(map)
-        .bindPopup("Mitte des Suchradius");
+              // Zeichne den Suchradius als Kreis
+              circleLayer = L.circle([lat, lng], {
+                color: 'red',
+                fillColor: '#f03',
+                fillOpacity: 0.3,
+                radius: radius
+              }).addTo(map);
 
-      // Passe den Zoom so an, dass der gesamte Suchradius sichtbar ist
-      map.fitBounds(circleLayer.getBounds());
+              // Markiere die Mitte des Suchradius (Popup wird nicht automatisch geöffnet)
+              centerMarker = L.marker([lat, lng]).addTo(map)
+                .bindPopup("Mitte des Suchradius");
 
-      // Simulierte Stationen
-      const stations = [
-        { name: "Wetterstation Freiburg", lat: 47.9978, lng: 7.8421 },
-        { name: "Wetterstation Stuttgart", lat: 48.7758, lng: 9.1829 },
-        { name: "Wetterstation Villingen-Schwenningen", lat: 48.0656, lng: 8.5044 }
-      ];
+              // Passe den Zoom so an, dass der gesamte Suchradius sichtbar ist
+              map.fitBounds(circleLayer.getBounds());
 
-      // Berechne die Entfernung jeder Station zum Mittelpunkt und filtere jene im Suchradius
-      const centerLatLng = L.latLng(lat, lng);
-      const validStations = [];
+              // Simulierte Stationen
+              const stations = [
+                { name: "Wetterstation Freiburg", lat: 47.9978, lng: 7.8421 },
+                { name: "Wetterstation Stuttgart", lat: 48.7758, lng: 9.1829 },
+                { name: "Wetterstation Villingen-Schwenningen", lat: 48.0656, lng: 8.5044 }
+              ];
 
-      stations.forEach(function(station) {
-        const stationLatLng = L.latLng(station.lat, station.lng);
-        const distance = centerLatLng.distanceTo(stationLatLng); // in Metern
-        if (distance <= radius) {
-          validStations.push({ ...station, distance: distance });
-        }
-      });
+              // Frage die Stationen beim Backend an
+              try {
+                const params = {
+                  latitude: latitudeVal,
+                  longitude: longitudeVal,
+                  radius: radiusVal,
+                  max_stations: maxStationsVal,
+                  start_year: startYearVal,
+                  end_year: endYearVal
+                };
+                const { data } = await axios.get(`${API_URL}/weather`, { params });
+                  console.log('Nearest Stations:', data);
+                  const validStations = data;
+                } catch (error) {
+                  console.error('Error fetching weather data:', error.response?.data || error.message);
+              }
 
-      // Sortiere die gefundenen Stationen nach Entfernung (aufsteigend)
-      validStations.sort((a, b) => a.distance - b.distance);
 
-      // Wähle maximal die angegebene Anzahl der nächsten Stationen
-      const stationsToShow = validStations.slice(0, maxStations);
+              // Definiere das benutzerdefinierte Icon
+              const thermoIcon = L.icon({
+                iconUrl: 'thermometer.png',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+                popupAnchor: [0, -16]
+              });
 
-      // Definiere das benutzerdefinierte Icon
-      const thermoIcon = L.icon({
-        iconUrl: 'thermometer.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-        popupAnchor: [0, -16]
-      });
+              // Füge die ausgewählten Stationen als Marker hinzu
+              validStations.forEach(function(station) {
+                const marker = L.marker([station.Latitude, station.Longitude], { icon: thermoIcon }).addTo(map);
 
-      // Füge die ausgewählten Stationen als Marker hinzu
-      stationsToShow.forEach(function(station) {
-        const marker = L.marker([station.lat, station.lng], { icon: thermoIcon }).addTo(map);
+                // Tooltip beim Hover mit Stationsdaten
+                marker.bindTooltip(
+                  station.Name + "<br>" +
+                  "Koordinaten: " + station.Latitude.toFixed(4) + ", " + station.Longitude.toFixed(4) + "<br>" +
+                  "Entfernung: " + (station.Distance / 1000).toFixed(2) + " km"
+                );
 
-        // Tooltip beim Hover mit Stationsdaten
-        marker.bindTooltip(
-          station.name + "<br>" +
-          "Koordinaten: " + station.lat.toFixed(4) + ", " + station.lng.toFixed(4) + "<br>" +
-          "Entfernung: " + (station.distance / 1000).toFixed(2) + " km"
-        );
+                // Beim Klick auf den Marker Weiterleitung zu "Graph_v2.html"
+                marker.on('click', function() {
+                  window.location.href = "station_v2.html?station=" + encodeURIComponent(station.name);
+                });
 
-        // Beim Klick auf den Marker Weiterleitung zu "Graph_v2.html"
-        marker.on('click', function() {
-          window.location.href = "station_v2.html?station=" + encodeURIComponent(station.name);
-        });
+                stationMarkers.push(marker);
+              });
+            }
 
-        stationMarkers.push(marker);
-      });
-    }
+            // Zurücksetzen der Eingabefelder und der Karte
+            function resetFields() {
+              document.getElementById("longitude").value = "";
+              document.getElementById("latitude").value = "";
+              document.getElementById("radius").value = "";
+              document.getElementById("maxStations").value = "";
+              document.getElementById("startYear").value = "";
+              document.getElementById("endYear").value = "";
 
-    // Zurücksetzen der Eingabefelder und der Karte
-    function resetFields() {
-      document.getElementById("longitude").value = "";
-      document.getElementById("latitude").value = "";
-      document.getElementById("radius").value = "";
-      document.getElementById("maxStations").value = "";
-      document.getElementById("startYear").value = "";
-      document.getElementById("endYear").value = "";
+              if (circleLayer) {
+                map.removeLayer(circleLayer);
+              }
+              if (centerMarker) {
+                map.removeLayer(centerMarker);
+              }
+              if (stationMarkers.length > 0) {
+                stationMarkers.forEach(function(marker) {
+                  map.removeLayer(marker);
+                });
+                stationMarkers = [];
+              }
+              map.setView([51.1657, 10.4515], 6);
+            }
 
-      if (circleLayer) {
-        map.removeLayer(circleLayer);
-      }
-      if (centerMarker) {
-        map.removeLayer(centerMarker);
-      }
-      if (stationMarkers.length > 0) {
-        stationMarkers.forEach(function(marker) {
-          map.removeLayer(marker);
-        });
-        stationMarkers = [];
-      }
-      map.setView([51.1657, 10.4515], 6);
-    }
-
-    window.onload = initMap;
-  </script>
-</body>
+            window.onload = initMap;
+        </script>
+    </body>
 </html>
