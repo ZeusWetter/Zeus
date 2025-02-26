@@ -339,7 +339,7 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
             ("summer", result.get("summer", {})),
             ("autumn", result.get("autumn", {}))
         ]) 
-        return json.dumps(ordered_result, indent=4)
+        return ordered_result
 
     else: #Südhalbkugel
         # Monate werden den Jahreszeiten zugewiesen:
@@ -433,7 +433,7 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
             ("summer", result.get("summer", {})),
             ("autumn", result.get("autumn", {}))
         ])
-        return json.dumps(ordered_result, indent=4)
+        return ordered_result
 
 
 
