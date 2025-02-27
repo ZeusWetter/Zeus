@@ -201,7 +201,7 @@
             }
 
             // Frage die Stationen beim Backend an
-            async function fetchWeatherData(
+            async function fetchStations(
                 latitudeVal,
                 longitudeVal,
                 radiusVal,
@@ -225,14 +225,13 @@
                         },
                     );
                     console.log("Nearest Stations:", data);
-                    const validStations = data;
+                    return data;
                 } catch (error) {
                     console.error(
-                        "Error fetching weather data:",
+                        "Error fetching stations:",
                         error.response?.data || error.message,
                     );
                 }
-                return validStations;
             }
 
             // Validierung aller Eingaben vor der Suche
@@ -339,7 +338,7 @@
             }
 
             // Suchen von Wetterstationen (Simulation des Suchradius)
-            function searchStations() {
+            async function searchStations() {
                 if (!validateInputs()) {
                     return;
                 }
@@ -392,7 +391,7 @@
                 // Passe den Zoom so an, dass der gesamte Suchradius sichtbar ist
                 map.fitBounds(circleLayer.getBounds());
 
-                const stations = fetchWeatherData(
+                const stations = await fetchStations(
                     lat,
                     lng,
                     radius,
@@ -408,6 +407,13 @@
                     iconAnchor: [16, 16],
                     popupAnchor: [0, -16],
                 });
+
+                console.log("Stations-Daten:", stations);
+
+                if (!stations || !Array.isArray(stations)) {
+                    console.error("stations ist entweder undefined oder kein Array:", stations);
+                    return;
+                }
 
                 // Füge die ausgewählten Stationen als Marker hinzu
                 stations.forEach(function (station) {
@@ -426,15 +432,20 @@
                             station.Longitude.toFixed(4) +
                             "<br>" +
                             "Entfernung: " +
-                            (station.Distance / 1000).toFixed(2) +
+                            (station.Distance).toFixed(2) +
                             " km",
                     );
 
                     // Beim Klick auf den Marker Weiterleitung zu "Graph_v2.html"
                     marker.on("click", function () {
                         window.location.href =
-                            "station_v2.html?station=" +
-                            encodeURIComponent(station.name);
+                            "station.html?station=" +
+                            encodeURIComponent(station.Name) +
+                            "&id=" + encodeURIComponent(station.ID) +
+                            "&latitude=" + encodeURIComponent(station.Latitude) +
+                            "&longitude=" + encodeURIComponent(station.Longitude) +
+                            "&startYear=" + startYear +
+                            "&endYear=" + endYear;
                     });
 
                     stationMarkers.push(marker);

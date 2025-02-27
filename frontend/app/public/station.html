@@ -113,30 +113,82 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
   <script>
-    // Simuliertes Mapping der Stationen zu ihren Daten (Name, Koordinaten)
-    const stationData = {
-      "Wetterstation Freiburg": { header: "Freiburg", subHeader: "47.9978 / 7.8421" },
-      "Wetterstation Stuttgart": { header: "Stuttgart", subHeader: "48.7758 / 9.1829" },
-      "Wetterstation Villingen-Schwenningen": { header: "Villingen-Schwenningen", subHeader: "48.0656 / 8.5044" }
-    };
+    const API_URL = "http://localhost:8000";
+
+    // Frage die Werte beim Backend an
+    async function fetchWeatherdata(
+                stationId,
+                startYearVal,
+                endYearVal,
+                latitudeVal,
+            ) {
+                try {
+                    const params = {
+                        start_year: startYearVal,
+                        end_year: endYearVal,
+                        latitude: latitudeVal
+                    };
+                    const { data } = await axios.get(
+                        `${API_URL}/weather-data/${stationId}`,
+                        {
+                            params,
+                        },
+                    );
+                    console.log("Weatherdata:", data);
+                    return data;
+                } catch (error) {
+                    console.error(
+                        "Error fetching weatherdata:",
+                        error.response?.data || error.message,
+                    );
+                }
+            }
+
 
     // Auslesen des Query-Parameters "station" aus der URL
     const urlParams = new URLSearchParams(window.location.search);
     const stationParam = urlParams.get('station');
+    const idParam = urlParams.get('id');
+    const latitudeParam = urlParams.get('latitude');
+    const longitudeParam = urlParams.get('longitude');
+    const startYearParam = urlParams.get('startYear');
+    const endYearParam = urlParams.get('endYear');
     // Aktualisiere Header und Sub-Header, falls der Parameter vorhanden und bekannt ist
-    if (stationParam && stationData[stationParam]) {
-      document.getElementById("stationHeader").textContent = stationData[stationParam].header;
-      document.getElementById("stationSubHeader").textContent = stationData[stationParam].subHeader;
+    if (stationParam && idParam && latitudeParam && longitudeParam) {
+      document.getElementById("stationHeader").textContent = stationParam
+      document.getElementById("stationSubHeader").textContent = "Breitengrad: " + latitudeParam + " Längengrad: " + longitudeParam
     } else {
       // Fallback: Falls kein gültiger Parameter übergeben wurde, wird ein Standardwert gesetzt
       document.getElementById("stationHeader").textContent = "Unbekannte Station";
       document.getElementById("stationSubHeader").textContent = "Keine Koordinaten verfügbar";
     }
 
+
+    let weatherdata;
+
+    (async () => {
+      try {
+        const response = await fetchWeatherdata(idParam, startYearParam, endYearParam, latitudeParam);
+        console.log("Response von fetchWeatherdata:", response);
+        
+        // Falls response bereits die geparsten JSON-Daten enthält:
+        if (typeof response.json === 'function') {
+          weatherdata = await response.json();
+        } else {
+          weatherdata = response;
+        }
+        console.log("Weatherdata:", weatherdata);
+        // Weitere Verarbeitung der Daten...
+      } catch (error) {
+        console.error("Fehler beim Abrufen der Wetterdaten:", error);
+      }
+    })();
+
     // Simulierte Daten für die letzten 10 Jahre
-    const years = Array.from({ length: 10 }, (_, i) => 2014 + i);
-    const tempMax = [9.0, 9.1, 9.3, 9.5, 9.4, 9.6, 9.8, 9.9, 10.0, 10.2];
+    const years = Array.from({ length: parseInt(endYearParam) - parseInt(startYearParam) + 1 }, (_, i) => parseInt(startYearParam) + i);
+    const tempMax = [9.0, 9.1, 9.3, 9.5, 9.4, 9.6, 9.8, 9.9, 10.0, 10.2]; 
     const tempMin = [1.2, 1.3, 1.4, 1.5, 1.4, 1.6, 1.7, 1.8, 1.9, 2.0];
 
     // Simulierte Daten für die Jahreszeiten
