@@ -439,7 +439,11 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
 
 
 if __name__ == "__main__":
-
+    """
+    # Lokaler Test für große Anzahl Stationen in kleinem Radius
+    print(find_nearest_stations(48.0594021, 8.4640869, 30, 100, 2010, 2020))
+    """
+    
     """
     print(load_stations_from_file())
     print(load_inventory_from_file())
