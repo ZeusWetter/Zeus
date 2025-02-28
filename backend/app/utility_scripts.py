@@ -180,7 +180,7 @@ def find_nearest_stations(user_lat, user_lon, radius, max_stations, start_year, 
 
                     if distance <= radius:
                         station_copy = station.copy()
-                        station_copy["Distance"] = distance
+                        station_copy["Distance"] = round(distance, 2)
                         nearby_stations.append(station_copy)
 
     nearby_stations.sort(key=lambda x: x["Distance"])# Das lambda gibt an, dass die Liste nach dem Wert des Schlüssels "Distance" in jedem Dictionary sortiert wird.
@@ -317,8 +317,8 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
             if year == first_year:
                 continue
             result["entire_year"][year] = {
-                "TMAX": np.nanmean(values["TMAX"]) if values["TMAX"] else None,
-                "TMIN": np.nanmean(values["TMIN"]) if values["TMIN"] else None
+                "TMAX": round(np.nanmean(values["TMAX"]), 1) if values["TMAX"] else None,
+                "TMIN": round(np.nanmean(values["TMIN"]), 1) if values["TMIN"] else None
             }
 
         # Jetzt werden die Mittelwerte für die Jahreszeiten basierend auf unserer Datenstruktur "seasonal_data" berechnet
@@ -328,8 +328,8 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
             result[season] = {}
             for year, values in data.items():
                 result[season][year] = {
-                    "TMAX": np.nanmean(values["TMAX"]) if values["TMAX"] else None,
-                    "TMIN": np.nanmean(values["TMIN"]) if values["TMIN"] else None
+                    "TMAX": round(np.nanmean(values["TMAX"]), 1) if values["TMAX"] else None,
+                    "TMIN": round(np.nanmean(values["TMIN"]), 1) if values["TMIN"] else None
                     }
                 # Das dictionary wird sortiert, um einheitliche Darstellung nach Erdhälften zu versichern
         ordered_result = OrderedDict([
@@ -411,8 +411,8 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
             if year == first_year:
                 continue
             result["entire_year"][year] = {
-                "TMAX": np.nanmean(values["TMAX"]) if values["TMAX"] else None,
-                "TMIN": np.nanmean(values["TMIN"]) if values["TMIN"] else None
+                "TMAX": round(np.nanmean(values["TMAX"]), 1) if values["TMAX"] else None,
+                "TMIN": round(np.nanmean(values["TMIN"]), 1) if values["TMIN"] else None
             }
 
         # Jetzt werden die Mittelwerte für die Jahreszeiten basierend auf unserer Datenstruktur "seasonal_data" berechnet
@@ -422,8 +422,8 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
             result[season] = {}
             for year, values in data.items():
                 result[season][year] = {
-                    "TMAX": np.nanmean(values["TMAX"]) if values["TMAX"] else None,
-                    "TMIN": np.nanmean(values["TMIN"]) if values["TMIN"] else None
+                    "TMAX": round(np.nanmean(values["TMAX"]), 1) if values["TMAX"] else None,
+                    "TMIN": round(np.nanmean(values["TMIN"]), 1) if values["TMIN"] else None
                     }
         # Das dictionary wird sortiert, um einheitliche Darstellung nach Erdhälften zu versichern
         ordered_result = OrderedDict([
@@ -439,10 +439,9 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
 
 
 if __name__ == "__main__":
-    """
     # Lokaler Test für große Anzahl Stationen in kleinem Radius
     print(find_nearest_stations(48.0594021, 8.4640869, 30, 100, 2010, 2020))
-    """
+    
     
     """
     print(load_stations_from_file())
