@@ -213,11 +213,16 @@
                     const params = {
                         latitude: latitudeVal,
                         longitude: longitudeVal,
-                        radius: radiusVal,
+                        radius: radiusVal / 1000,
                         max_stations: maxStationsVal,
                         start_year: startYearVal,
                         end_year: endYearVal,
                     };
+                    console.log(axios.get(
+                        `${API_URL}/nearest-stations`,
+                        {
+                            params,
+                        }),);
                     const { data } = await axios.get(
                         `${API_URL}/nearest-stations`,
                         {
