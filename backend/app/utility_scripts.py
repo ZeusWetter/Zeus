@@ -240,7 +240,7 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
     Berücksichtigt außerdem die Jahreszeiten nach Erdhälften
     
     station_weather_data: Dictionary mit Temperaturwerten einer Wetterstation aus der Funktion download_weather_data()
-    first_year: Erstes Jahr, dessen Januar bis November ignoriert wird
+    first_year: Erstes Jahr
     last_year: Letztes Jahr, wichtig um sicherzustellen dass der Dezember des letzten Jahres keinen neuen Winter-Eintrag erstellt
     latitude: Breitengrad um die Wetterstationen den Erdhälften zuzuordnen
     
