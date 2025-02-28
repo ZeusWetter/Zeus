@@ -117,37 +117,26 @@
   <script>
     const API_URL = "http://localhost:8000";
 
-    // Frage die Werte beim Backend an
-    async function fetchWeatherdata(
-                stationId,
-                startYearVal,
-                endYearVal,
-                latitudeVal,
-            ) {
-                try {
-                    const params = {
-                        start_year: startYearVal,
-                        end_year: endYearVal,
-                        latitude: latitudeVal
-                    };
-                    const { data } = await axios.get(
-                        `${API_URL}/weather-data/${stationId}`,
-                        {
-                            params,
-                        },
-                    );
-                    console.log("Weatherdata:", data);
-                    return data;
-                } catch (error) {
-                    console.error(
-                        "Error fetching weatherdata:",
-                        error.response?.data || error.message,
-                    );
-                }
-            }
+    // Funktion, die Wetterdaten abruft
+    async function fetchWeatherdata(stationId, startYearVal, endYearVal, latitudeVal) {
+      try {
+        const params = {
+          start_year: startYearVal,
+          end_year: endYearVal,
+          latitude: latitudeVal
+        };
+        const { data } = await axios.get(
+          `${API_URL}/weather-data/${stationId}`,
+          { params }
+        );
+        console.log("Weatherdata:", data);
+        return data;
+      } catch (error) {
+        console.error("Error fetching weatherdata:", error.response?.data || error.message);
+      }
+    }
 
-
-    // Auslesen des Query-Parameters "station" aus der URL
+    // Query-Parameter aus der URL auslesen
     const urlParams = new URLSearchParams(window.location.search);
     const stationParam = urlParams.get('station');
     const idParam = urlParams.get('id');
@@ -155,240 +144,254 @@
     const longitudeParam = urlParams.get('longitude');
     const startYearParam = urlParams.get('startYear');
     const endYearParam = urlParams.get('endYear');
-    // Aktualisiere Header und Sub-Header, falls der Parameter vorhanden und bekannt ist
+
+    // Header aktualisieren
     if (stationParam && idParam && latitudeParam && longitudeParam) {
-      document.getElementById("stationHeader").textContent = stationParam
-      document.getElementById("stationSubHeader").textContent = "Breitengrad: " + latitudeParam + " Längengrad: " + longitudeParam
+      document.getElementById("stationHeader").textContent = stationParam;
+      document.getElementById("stationSubHeader").textContent = "Breitengrad: " + latitudeParam + " Längengrad: " + longitudeParam;
     } else {
-      // Fallback: Falls kein gültiger Parameter übergeben wurde, wird ein Standardwert gesetzt
       document.getElementById("stationHeader").textContent = "Unbekannte Station";
       document.getElementById("stationSubHeader").textContent = "Keine Koordinaten verfügbar";
     }
 
+    // Sobald das DOM geladen ist, alle asynchronen Operationen ausführen
+    document.addEventListener('DOMContentLoaded', async () => {
+      let weatherdata;
+      let tempMin = [];
+      let tempMax = [];
+      let years = [];
 
-    let weatherdata;
-
-    (async () => {
+      // Wetterdaten abrufen
       try {
         const response = await fetchWeatherdata(idParam, startYearParam, endYearParam, latitudeParam);
-        console.log("Response von fetchWeatherdata:", response);
-        
-        // Falls response bereits die geparsten JSON-Daten enthält:
-        if (typeof response.json === 'function') {
-          weatherdata = await response.json();
+        // axios liefert bereits das geparste Objekt
+        weatherdata = response;
+        console.log("Geladene Weatherdata:", weatherdata);
+
+        if (weatherdata && weatherdata.entire_year) {
+          // Jahres-Schlüssel sortieren (als X-Achse)
+          years = Object.keys(weatherdata.entire_year).sort((a, b) => parseInt(a) - parseInt(b));
+          // Werte für entire_year extrahieren
+          for (const year of years) {
+            const data = weatherdata.entire_year[year];
+            tempMin.push(data.TMIN);
+            tempMax.push(data.TMAX);
+          }
         } else {
-          weatherdata = response;
+          console.error("weatherdata oder weatherdata.entire_year ist nicht definiert.");
         }
-        console.log("Weatherdata:", weatherdata);
-        // Weitere Verarbeitung der Daten...
       } catch (error) {
         console.error("Fehler beim Abrufen der Wetterdaten:", error);
       }
-    })();
 
-    // Simulierte Daten für die letzten 10 Jahre
-    const years = Array.from({ length: parseInt(endYearParam) - parseInt(startYearParam) + 1 }, (_, i) => parseInt(startYearParam) + i);
-    const tempMax = [9.0, 9.1, 9.3, 9.5, 9.4, 9.6, 9.8, 9.9, 10.0, 10.2]; 
-    const tempMin = [1.2, 1.3, 1.4, 1.5, 1.4, 1.6, 1.7, 1.8, 1.9, 2.0];
-
-    // Simulierte Daten für die Jahreszeiten
-    const seasons = ['Frühling', 'Sommer', 'Herbst', 'Winter'];
-    const seasonalTempMax = [
-      [10.0, 25.0, 15.0, 5.0],
-      [10.2, 25.3, 15.2, 5.3],
-      [10.5, 25.5, 15.5, 5.5],
-      [10.7, 25.7, 15.7, 5.7],
-      [10.6, 25.6, 15.6, 5.6],
-      [10.8, 25.8, 15.8, 5.8],
-      [11.0, 26.0, 16.0, 6.0],
-      [11.1, 26.2, 16.2, 6.2],
-      [11.3, 26.5, 16.5, 6.5],
-      [11.5, 26.7, 16.7, 6.7]
-    ];
-    const seasonalTempMin = [
-      [2.0, 10.0, 5.0, -2.0],
-      [2.1, 10.3, 5.2, -1.9],
-      [2.2, 10.5, 5.5, -1.8],
-      [2.3, 10.7, 5.7, -1.7],
-      [2.4, 10.6, 5.6, -1.6],
-      [2.5, 10.8, 5.8, -1.5],
-      [2.6, 11.0, 6.0, -1.4],
-      [2.7, 11.2, 6.2, -1.3],
-      [2.8, 11.3, 6.5, -1.2],
-      [2.9, 11.5, 6.7, -1.1]
-    ];
-
-    // -----------------------------
-    // Diagramm: Jährliche Mittelwerte
-    // -----------------------------
-    const annualTemperatureCtx = document.getElementById('annualTemperatureChart').getContext('2d');
-    const annualTemperatureChart = new Chart(annualTemperatureCtx, {
-      type: 'line',
-      data: {
-        labels: years,
-        datasets: [
-          {
-            label: 'Jährlicher Mittelwert Temperaturmaxima',
-            data: tempMax,
-            borderColor: 'red',
-            backgroundColor: 'red'
-          },
-          {
-            label: 'Jährlicher Mittelwert Temperaturminima',
-            data: tempMin,
-            borderColor: 'blue',
-            backgroundColor: 'blue'
+      // -----------------------------
+      // Berechnung der saisonalen Daten (winter, spring, summer, autumn)
+      // Wir verwenden als X-Achse dieselben Jahre wie bei entire_year.
+      // Für jedes Jahr wird ein Array mit 4 Werten erstellt.
+      const seasonKeys = ['winter', 'spring', 'summer', 'autumn'];
+      let seasonalTempMax = [];
+      let seasonalTempMin = [];
+      // Für jedes Jahr (X-Achse) aus entire_year
+      for (let i = 0; i < years.length; i++) {
+        let year = years[i];
+        let rowMax = [];
+        let rowMin = [];
+        // Für jede Saison
+        for (let season of seasonKeys) {
+          if (weatherdata[season] && weatherdata[season][year]) {
+            rowMax.push(weatherdata[season][year].TMAX);
+            rowMin.push(weatherdata[season][year].TMIN);
+          } else {
+            // Falls für das Jahr keine Daten in dieser Saison vorhanden sind, als Platzhalter null einfügen
+            rowMax.push(null);
+            rowMin.push(null);
           }
-        ]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              color: '#fff',
-              usePointStyle: true,
-              onClick: (e, legendItem, legend) => {
-                const index = legendItem.datasetIndex;
-                const ci = legend.chart;
-                const meta = ci.getDatasetMeta(index);
-                meta.hidden = !meta.hidden;
-                ci.update();
-              }
+        }
+        seasonalTempMax.push(rowMax);
+        seasonalTempMin.push(rowMin);
+      }
+      console.log("Saisonale TMAX:", seasonalTempMax);
+      console.log("Saisonale TMIN:", seasonalTempMin);
+
+      // -----------------------------
+      // Diagramm: Jährliche Mittelwerte
+      // -----------------------------
+      const annualTemperatureCtx = document.getElementById('annualTemperatureChart').getContext('2d');
+      const annualTemperatureChart = new Chart(annualTemperatureCtx, {
+        type: 'line',
+        data: {
+          labels: years,
+          datasets: [
+            {
+              label: 'Jährlicher Mittelwert Temperaturmaxima',
+              data: tempMax,
+              borderColor: 'red',
+              backgroundColor: 'red'
+            },
+            {
+              label: 'Jährlicher Mittelwert Temperaturminima',
+              data: tempMin,
+              borderColor: 'blue',
+              backgroundColor: 'blue'
             }
-          },
-          tooltip: { enabled: true }
+          ]
         },
-        scales: {
-          x: { ticks: { color: '#fff' } },
-          y: { ticks: { color: '#fff' } }
-        }
-      }
-    });
-
-    // -----------------------------
-    // Diagramm: Jahreszeitliche Mittelwerte
-    // -----------------------------
-    const seasonalTemperatureCtx = document.getElementById('seasonalTemperatureChart').getContext('2d');
-    const maximaColors = ["green", "red", "#C7BD00", "blue"];
-    const minimaColors = ["lightgreen", "lightcoral", "#F5FF86", "lightblue"];
-
-    const seasonalTemperatureChart = new Chart(seasonalTemperatureCtx, {
-      type: 'line',
-      data: {
-        labels: years,
-        datasets: [
-          // Zunächst alle Maxima
-          ...seasons.map((season, index) => ({
-            label: `Mittelwert ${season} (Maxima)`,
-            data: seasonalTempMax.map(data => data[index]),
-            borderColor: maximaColors[index],
-            backgroundColor: maximaColors[index],
-            fill: false
-          })),
-          // Dann alle Minima
-          ...seasons.map((season, index) => ({
-            label: `Mittelwert ${season} (Minima)`,
-            data: seasonalTempMin.map(data => data[index]),
-            borderColor: minimaColors[index],
-            backgroundColor: minimaColors[index],
-            fill: false
-          }))
-        ]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              color: '#fff',
-              usePointStyle: true,
-              onClick: (e, legendItem, legend) => {
-                const index = legendItem.datasetIndex;
-                const ci = legend.chart;
-                const meta = ci.getDatasetMeta(index);
-                meta.hidden = !meta.hidden;
-                ci.update();
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                color: '#fff',
+                usePointStyle: true,
+                onClick: (e, legendItem, legend) => {
+                  const index = legendItem.datasetIndex;
+                  const ci = legend.chart;
+                  const meta = ci.getDatasetMeta(index);
+                  meta.hidden = !meta.hidden;
+                  ci.update();
+                }
               }
-            }
+            },
+            tooltip: { enabled: true }
           },
-          tooltip: { enabled: true }
+          scales: {
+            x: { ticks: { color: '#fff' } },
+            y: { ticks: { color: '#fff' } }
+          }
+        }
+      });
+      console.log("Annual Chart wurde erstellt.");
+
+      // -----------------------------
+      // Diagramm: Jahreszeitliche Mittelwerte
+      // -----------------------------
+      const seasonalTemperatureCtx = document.getElementById('seasonalTemperatureChart').getContext('2d');
+      // Farben für die Saisons (Reihenfolge: winter, spring, summer, autumn)
+      const maximaColors = ["green", "red", "#C7BD00", "blue"];
+      const minimaColors = ["lightgreen", "lightcoral", "#F5FF86", "lightblue"];
+
+      // Erstelle für jede Saison einen Datensatz. Dabei wird aus den 2D-Arrays pro Jahr der jeweilige Saisonwert extrahiert.
+      const seasonalDatasets = [
+        // Datensätze für Maxima
+        ...seasonKeys.map((season, index) => ({
+          label: `Mittelwert ${season} (Maxima)`,
+          data: seasonalTempMax.map(row => row[index]),
+          borderColor: maximaColors[index],
+          backgroundColor: maximaColors[index],
+          fill: false
+        })),
+        // Datensätze für Minima
+        ...seasonKeys.map((season, index) => ({
+          label: `Mittelwert ${season} (Minima)`,
+          data: seasonalTempMin.map(row => row[index]),
+          borderColor: minimaColors[index],
+          backgroundColor: minimaColors[index],
+          fill: false
+        }))
+      ];
+
+      const seasonalTemperatureChart = new Chart(seasonalTemperatureCtx, {
+        type: 'line',
+        data: {
+          labels: years,
+          datasets: seasonalDatasets
         },
-        scales: {
-          x: { ticks: { color: '#fff' } },
-          y: { ticks: { color: '#fff' } }
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                color: '#fff',
+                usePointStyle: true,
+                onClick: (e, legendItem, legend) => {
+                  const index = legendItem.datasetIndex;
+                  const ci = legend.chart;
+                  const meta = ci.getDatasetMeta(index);
+                  meta.hidden = !meta.hidden;
+                  ci.update();
+                }
+              }
+            },
+            tooltip: { enabled: true }
+          },
+          scales: {
+            x: { ticks: { color: '#fff' } },
+            y: { ticks: { color: '#fff' } }
+          }
+        }
+      });
+      console.log("Seasonal Chart wurde erstellt.");
+
+      // -----------------------------
+      // Funktionen zur Tabellenerzeugung
+      // -----------------------------
+      function generateAnnualTable() {
+        let tableHTML = '<table>';
+        tableHTML += '<tr><th>Jahr</th><th>TempMax</th><th>TempMin</th></tr>';
+        for (let i = 0; i < years.length; i++) {
+          tableHTML += '<tr>';
+          tableHTML += `<td>${years[i]}</td>`;
+          tableHTML += `<td>${tempMax[i]}</td>`;
+          tableHTML += `<td>${tempMin[i]}</td>`;
+          tableHTML += '</tr>';
+        }
+        tableHTML += '</table>';
+        return tableHTML;
+      }
+
+      function generateSeasonalTable() {
+        let tableHTML = '<table>';
+        tableHTML += '<tr><th>Jahr</th><th>Winter Max</th><th>Winter Min</th><th>Frühling Max</th><th>Frühling Min</th><th>Sommer Max</th><th>Sommer Min</th><th>Herbst Max</th><th>Herbst Min</th></tr>';
+        // Für jedes Jahr (entsprechend der X-Achse)
+        for (let i = 0; i < years.length; i++) {
+          tableHTML += '<tr>';
+          tableHTML += `<td>${years[i]}</td>`;
+          // Für jede Saison (winter, spring, summer, autumn)
+          for (let j = 0; j < seasonKeys.length; j++) {
+            tableHTML += `<td>${(seasonalTempMax[i] && seasonalTempMax[i][j]) !== null ? seasonalTempMax[i][j] : '-'}</td>`;
+            tableHTML += `<td>${(seasonalTempMin[i] && seasonalTempMin[i][j]) !== null ? seasonalTempMin[i][j] : '-'}</td>`;
+          }
+          tableHTML += '</tr>';
+        }
+        tableHTML += '</table>';
+        return tableHTML;
+      }
+
+      // Tabellen in die Container einfügen
+      document.getElementById('annualTableContainer').innerHTML = generateAnnualTable();
+      document.getElementById('seasonalTableContainer').innerHTML = generateSeasonalTable();
+
+      // -----------------------------
+      // Toggle-Funktionalität für Diagramme & Tabellen
+      // -----------------------------
+      let currentChart = 'annual';  // Mögliche Werte: 'annual' oder 'seasonal'
+      const chartLabel = document.getElementById('chartLabel');
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+
+      function toggleChart() {
+        if (currentChart === 'seasonal') {
+          currentChart = 'annual';
+          chartLabel.textContent = 'Jahr';
+          document.getElementById('seasonalChartContainer').style.display = 'none';
+          document.getElementById('annualChartContainer').style.display = 'block';
+          document.getElementById('seasonalTableContainer').style.display = 'none';
+          document.getElementById('annualTableContainer').style.display = 'block';
+        } else {
+          currentChart = 'seasonal';
+          chartLabel.textContent = 'Jahreszeiten';
+          document.getElementById('seasonalChartContainer').style.display = 'block';
+          document.getElementById('annualChartContainer').style.display = 'none';
+          document.getElementById('seasonalTableContainer').style.display = 'block';
+          document.getElementById('annualTableContainer').style.display = 'none';
         }
       }
+
+      prevBtn.addEventListener('click', toggleChart);
+      nextBtn.addEventListener('click', toggleChart);
     });
-
-    // -----------------------------
-    // Funktionen zur Tabellenerzeugung
-    // -----------------------------
-    function generateAnnualTable() {
-      let tableHTML = '<table>';
-      tableHTML += '<tr><th>Jahr</th><th>TempMax</th><th>TempMin</th></tr>';
-      for (let i = 0; i < years.length; i++) {
-        tableHTML += '<tr>';
-        tableHTML += `<td>${years[i]}</td>`;
-        tableHTML += `<td>${tempMax[i]}</td>`;
-        tableHTML += `<td>${tempMin[i]}</td>`;
-        tableHTML += '</tr>';
-      }
-      tableHTML += '</table>';
-      return tableHTML;
-    }
-
-    function generateSeasonalTable() {
-      let tableHTML = '<table>';
-      tableHTML += '<tr><th>Jahr</th><th>Frühling Max</th><th>Frühling Min</th><th>Sommer Max</th><th>Sommer Min</th><th>Herbst Max</th><th>Herbst Min</th><th>Winter Max</th><th>Winter Min</th></tr>';
-      for (let i = 0; i < years.length; i++) {
-        tableHTML += '<tr>';
-        tableHTML += `<td>${years[i]}</td>`;
-        for (let j = 0; j < seasons.length; j++) {
-          tableHTML += `<td>${seasonalTempMax[i][j]}</td>`;
-          tableHTML += `<td>${seasonalTempMin[i][j]}</td>`;
-        }
-        tableHTML += '</tr>';
-      }
-      tableHTML += '</table>';
-      return tableHTML;
-    }
-
-    // Tabelle initial befüllen
-    document.getElementById('annualTableContainer').innerHTML = generateAnnualTable();
-    document.getElementById('seasonalTableContainer').innerHTML = generateSeasonalTable();
-
-    // -----------------------------
-    // Toggle-Funktionalität für Diagramme & Tabellen
-    // -----------------------------
-    let currentChart = 'annual';  // Mögliche Werte: 'seasonal' oder 'annual'
-
-    const chartLabel = document.getElementById('chartLabel');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-
-    function toggleChart() {
-      if (currentChart === 'seasonal') {
-        currentChart = 'annual';
-        chartLabel.textContent = 'Jahr';
-        document.getElementById('seasonalChartContainer').style.display = 'none';
-        document.getElementById('annualChartContainer').style.display = 'block';
-        document.getElementById('seasonalTableContainer').style.display = 'none';
-        document.getElementById('annualTableContainer').style.display = 'block';
-      } else {
-        currentChart = 'seasonal';
-        chartLabel.textContent = 'Jahreszeiten';
-        document.getElementById('seasonalChartContainer').style.display = 'block';
-        document.getElementById('annualChartContainer').style.display = 'none';
-        document.getElementById('seasonalTableContainer').style.display = 'block';
-        document.getElementById('annualTableContainer').style.display = 'none';
-      }
-    }
-
-    prevBtn.addEventListener('click', toggleChart);
-    nextBtn.addEventListener('click', toggleChart);
   </script>
 </body>
 </html>
