@@ -43,6 +43,7 @@ async def get_weather_data(station_id: str,
                            end_year: int,
                            latitude: float):
     try:
+        start_year -= 1
         # download_weather_data(station_id, start_year, end_year) wird ausgeführt um die Wetterdaten der Station zu speichern
         station_data = download_weather_data(station_id, start_year, end_year)
         # calculate_means(station_weather_data, first_year, last_year, latitude) wird ausgeführt
