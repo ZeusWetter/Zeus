@@ -439,7 +439,7 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
 
 
 if __name__ == "__main__":
-    """try:
+    try:
         load_stations_data()
     except Exception as e:
         print(f"Fehler: {e}")
@@ -448,4 +448,3 @@ if __name__ == "__main__":
         load_station_inventory()
     except Exception as e:
         print(f"Fehler: {e}")
-        """
