@@ -18,7 +18,7 @@ def load_stations_data():
     file_path = "data/stations.json"
 
     # Verzeichnis prüfen und erstellen, falls es nicht existiert
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    os.makedirs("data", exist_ok=True)  # Stellt sicher, dass das "data"-Verzeichnis existiert
 
     response = requests.get(url)
     if response.status_code == 200:
@@ -59,6 +59,8 @@ def load_station_inventory():
     response = requests.get(url)
     file_path = "data/inventory.json"
 
+    os.makedirs("data", exist_ok=True)  # Stellt sicher, dass das "data"-Verzeichnis existiert
+
     if response.status_code != 200:
         print("Fehler beim Laden der Inventardatei")
         return False # Zeigt an dass die Daten nicht gespeichert werden konnten
@@ -86,10 +88,7 @@ def load_station_inventory():
                 )
             else:
                 inventory[station_id][element] = (start_year, end_year)
-
-    # Verzeichnis prüfen und erstellen, falls nicht vorhanden
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
+                
     # Speichern als JSON-Datei
     with open(file_path, "w", encoding="utf-8") as json_file:
         json.dump(inventory, json_file, indent=4)
