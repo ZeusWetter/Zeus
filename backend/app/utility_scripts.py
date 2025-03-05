@@ -58,13 +58,13 @@ def load_station_inventory():
     url = "https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/ghcnd-inventory.txt"
     response = requests.get(url)
     file_path = "data/inventory.json"
-        
+
     if response.status_code != 200:
         print("Fehler beim Laden der Inventardatei")
         return False # Zeigt an dass die Daten nicht gespeichert werden konnten
 
     inventory = {}
-        
+
     # Datei Zeile für Zeile verarbeiten
     for line in response.text.splitlines():
         station_id = line[:11].strip()  # Station ID
@@ -109,7 +109,7 @@ def load_inventory_from_file():
     except FileNotFoundError:
         print(f"Fehler: Datei {file_path} nicht gefunden.")
         return {}
-    
+
 def haversine_distance(lat1, lon1, lat2, lon2):
     """
     lat1: Breitengrad Punkt 1
@@ -164,8 +164,8 @@ def find_nearest_stations(user_lat, user_lon, radius, max_stations, start_year, 
         station_lat = station["Latitude"]
         station_lon = station["Longitude"]
         station_id = station["ID"]
-        
-        
+
+
         # Prüfen ob die Station in der Inventardatei enthalten ist
         if station_id in inventory:
             station_data = inventory[station_id]
@@ -196,11 +196,11 @@ def download_weather_data(station_id, start_year, end_year):
     Rückgabe: Wetterdaten einer einzelnen Station
     """
     url = f"https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/all/{station_id}.dly"
-    
+
     response = requests.get(url, stream=True)
     if response.status_code != 200:
         raise ValueError(f"Fehler beim Herunterladen der Datei: {url}")
-    
+
     weather_data = {"station": station_id, "data": {}} # Datenstruktur wird erstellt
 
     # Typumwandlungen für Vergleich
@@ -221,13 +221,13 @@ def download_weather_data(station_id, start_year, end_year):
                         value = int(line[pos:pos+5]) # extrahiert Daten aus der Zeile (5 Buchstaben pro Tag)
                         if value == -9999:
                             value = None
-                        else: 
+                        else:
                             value = value /10
                         date = f"{year}-{month}-{day:02d}" #02d stellt sicher dass der Tag immer zweistellig ist 1 -> 01
-                        
+
                         if date not in weather_data["data"]:
-                            weather_data["data"][date] = {"TMAX": None, "TMIN": None} 
-                        
+                            weather_data["data"][date] = {"TMAX": None, "TMIN": None}
+
                         weather_data["data"][date][element] = value
     return weather_data
 
@@ -238,12 +238,12 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
     Berücksichtigt dabei, dass der Dezember eines Jahres zur Winterperiode
     des folgenden Jahres gezählt wird. Ignoriert die ersten 11 Monate des ersten Jahres.
     Berücksichtigt außerdem die Jahreszeiten nach Erdhälften
-    
+
     station_weather_data: Dictionary mit Temperaturwerten einer Wetterstation aus der Funktion download_weather_data()
     first_year: Erstes Jahr
     last_year: Letztes Jahr, wichtig um sicherzustellen dass der Dezember des letzten Jahres keinen neuen Winter-Eintrag erstellt
     latitude: Breitengrad um die Wetterstationen den Erdhälften zuzuordnen
-    
+
     Rückgabe: JSON mit Durchschnittswerten für das Jahr und die Jahreszeiten
     """
     if latitude >= 0: # Nordhalbkugel (Jaherszeiten wie gewohnt)
@@ -256,7 +256,7 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
 
         # Datenstruktur wird bereitgestellt / initiiert:
         seasonal_data = {
-            "spring": {}, 
+            "spring": {},
             "summer": {},
             "autumn": {},
             "winter": {},
@@ -280,7 +280,7 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
                     tmax = np.nan
                 if tmin is None:
                     tmin = np.nan
-                    
+
                 if year not in seasonal_data["entire_year"]:
                     seasonal_data["entire_year"][year] = {"TMAX": [], "TMIN": []}
                 seasonal_data["entire_year"][year]["TMAX"].append(tmax)
@@ -294,18 +294,18 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
                         seasonal_data[season][year]["TMIN"].append(tmin)
 
                 if month in [12, 1, 2]:
-                    if year == last_year and month == 12:  
+                    if year == last_year and month == 12:
                         continue  # Der Dezember des letzten Jahres wird ignoriert
                     if month in [1, 2]:
                         winter_year = year
                     else:
                         winter_year = year + 1
-                                
+
                     if winter_year not in seasonal_data["winter"]:
                         seasonal_data["winter"][winter_year] = {"TMAX": [], "TMIN": []}
                     seasonal_data["winter"][winter_year]["TMAX"].append(tmax)
                     seasonal_data["winter"][winter_year]["TMIN"].append(tmin)
-            
+
             except Exception as e:
                 print(f"Fehler beim Verarbeiten des Datums {date}: {e}")
 
@@ -338,7 +338,7 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
             ("spring", result.get("spring", {})),
             ("summer", result.get("summer", {})),
             ("autumn", result.get("autumn", {}))
-        ]) 
+        ])
         return ordered_result
 
     else: #Südhalbkugel
@@ -351,7 +351,7 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
 
         # Datenstruktur wird bereitgestellt / initiiert:
         seasonal_data = {
-            "spring": {}, 
+            "spring": {},
             "summer": {},
             "autumn": {},
             "winter": {},
@@ -375,7 +375,7 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
                     tmax = np.nan
                 if tmin is None:
                     tmin = np.nan
-                    
+
                 if year not in seasonal_data["entire_year"]:
                     seasonal_data["entire_year"][year] = {"TMAX": [], "TMIN": []}
                 seasonal_data["entire_year"][year]["TMAX"].append(tmax)
@@ -388,18 +388,18 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
                         seasonal_data[season][year]["TMAX"].append(tmax)
                         seasonal_data[season][year]["TMIN"].append(tmin)
                 if month in [12, 1, 2]:
-                    if year == last_year and month == 12:  
+                    if year == last_year and month == 12:
                         continue  # Der Dezember des letzten Jahres wird ignoriert
                     if month in [1, 2]:
                         summer_year = year
                     else:
                         summer_year = year + 1
-                                
+
                     if summer_year not in seasonal_data["summer"]:
                         seasonal_data["summer"][summer_year] = {"TMAX": [], "TMIN": []}
                     seasonal_data["summer"][summer_year]["TMAX"].append(tmax)
                     seasonal_data["summer"][summer_year]["TMIN"].append(tmin)
-            
+
             except Exception as e:
                 print(f"Fehler beim Verarbeiten des Datums {date}: {e}")
 
@@ -439,7 +439,7 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
 
 
 if __name__ == "__main__":
-    try:
+    """try:
         load_stations_data()
     except Exception as e:
         print(f"Fehler: {e}")
@@ -448,4 +448,4 @@ if __name__ == "__main__":
         load_station_inventory()
     except Exception as e:
         print(f"Fehler: {e}")
-        
+        """
