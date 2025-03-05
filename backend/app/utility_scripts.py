@@ -439,35 +439,13 @@ def calculate_means(station_weather_data, first_year, last_year, latitude):
 
 
 if __name__ == "__main__":
-    # Lokaler Test für große Anzahl Stationen in kleinem Radius
-    print(find_nearest_stations(48.0594021, 8.4640869, 30, 100, 2010, 2020))
-    
-    
-    """
-    print(load_stations_from_file())
-    print(load_inventory_from_file())
-    print(find_nearest_stations(48.0594, 8.4641, 100, 3, 2015, 2018))
-    """
-
-    """
-    stations = load_stations_from_file()
-    inv = load_inventory_from_file()
-    print(f"Anzahl der Stationen mit TMAX und TMIN: {len(inv)}")
-    print(list(inv.items())[:10])  # Zeigt die ersten 10 Einträge an
-    print(find_nearest_stations(48.0594, 8.4641, 100, 3, 2016, 2017))
-    """
-
-    """
     try:
-        stations = load_stations_data()
-        if stations is not None:
-            station_id = "GME00129634"
-            test_latitude = -1
-            weather_data = download_weather_data(station_id, 2015, 2016)
-            if weather_data:
-                result = calculate_means(weather_data, 2015, 2016, test_latitude)
-                print("Ergebnisse der Mittelwerte pro Saison:")
-                print(result)
+        load_stations_data()
     except Exception as e:
         print(f"Fehler: {e}")
-        """
+
+    try:
+        load_station_inventory()
+    except Exception as e:
+        print(f"Fehler: {e}")
+        
