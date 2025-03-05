@@ -1,17 +1,26 @@
 from fastapi import FastAPI, HTTPException
 from typing import List
 from utility_scripts import load_stations_from_file, load_inventory_from_file, find_nearest_stations, download_weather_data, calculate_means
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Erlaubt Anfragen vom Frontend
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
 
 @app.get("/nearest-stations", response_model=List[dict]) # API wurde in einem Beispiel getestet
-async def get_nearest_stations(latitude: float, 
-                               longitude: float, 
-                               radius: int, 
+async def get_nearest_stations(latitude: float,
+                               longitude: float,
+                               radius: int,
                                max_stations: int,
                                start_year: int,
                                end_year: int
@@ -20,10 +29,10 @@ async def get_nearest_stations(latitude: float,
     try:
         stations = load_stations_from_file()
         inventory = load_inventory_from_file()
-        
+
         if not stations or not inventory:
             raise HTTPException(status_code=500, detail="Fehler beim Laden der Stations- oder Inventardaten")
-        
+
         # Die nächsten Stationen werden basierend auf den Daten von stations und inventory, sowie der User-Eingabe berechnet.
         result = find_nearest_stations(latitude, longitude, radius, max_stations, start_year, end_year)
 
