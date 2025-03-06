@@ -1,0 +1,22 @@
+services:
+  backend:
+    image: ghcr.io/zeuswetter/zeus-backend:latest
+    ports:
+      - "8000:8000"
+    networks:
+      - zeus-network
+
+  frontend:
+    image: ghcr.io/zeuswetter/zeus-frontend:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      - WEB_APP_API_URL=http://localhost:8000
+    networks:
+      - zeus-network
+
+networks:
+  zeus-network:
+    driver: bridge
