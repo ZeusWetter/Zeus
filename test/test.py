@@ -9,23 +9,22 @@ import testdata
 
 class TestLoadStationsData(unittest.TestCase):
 
-    @patch("backend.app.utility_scripts.requests.get")  # Mocks API request
+    @patch("backend.app.utility_scripts.requests.get")  # Mocks GET request
     def test_load_stations_data_success(self, mock_get):
         """Tests if the function loads and saves weather station data correctly"""
-        # Simulate API response
+        # Simulate response
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.text = "GME00129634  48.0458    8.4617  720.0    VILLINGEN-SCHWENNINGEN" # Sample from GHCN website
+        mock_response.text = testdata.testdata_load_stations["mock_response_text"]
         mock_get.return_value = mock_response
 
         # Check if data directory exists
         data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "data"))
         os.makedirs(data_dir, exist_ok=True)
 
-        # Call function
         result = load_stations_data()
 
-        # Check the result
+        # Check if the file has been saved
         stations_path = os.path.join(data_dir, "stations.json")
         self.assertTrue(os.path.exists(stations_path), f"File {stations_path} not found.")
         self.assertTrue(result)
@@ -33,36 +32,35 @@ class TestLoadStationsData(unittest.TestCase):
         # Check if the content has been saved correctly
         with open(stations_path, "r") as f:
             data = json.load(f)
-            self.assertEqual(len(data), 1)  # One station should be loaded
-            self.assertEqual(data[0]["ID"], "GME00129634")
-            self.assertEqual(data[0]["Latitude"], 48.0458)
-            self.assertEqual(data[0]["Longitude"], 8.4617)
+            self.assertEqual(data[0]["ID"], "GME00129634", f"Failed. Expected: GME00129634, but got: {data[0]['ID']}.")
+            self.assertEqual(data[0]["Latitude"], 48.0458, f"Failed. Expected: 48.0458, but got: {data[0]['Latitude']}.")
+            self.assertEqual(data[0]["Longitude"], 8.4617, f"Failed. Expected: 8.4617, but got: {data[0]['Longitude']}.")
 
         # Delete file after test
         os.remove(stations_path)
 
-    @patch("backend.app.utility_scripts.requests.get")
+    @patch("backend.app.utility_scripts.requests.get") # Mocks GET request
     def test_load_stations_data_failure(self, mock_get):
-        """Tests if the function returns False if the download fails"""
+        """Tests the behavior if the Website is not available"""
         mock_get.return_value.status_code = 404  # Simulate error
 
         result = load_stations_data()
 
-        self.assertFalse(result)
+        # Check if the function returns False if the download fails
+        self.assertFalse(result, f"Failed. Expected: False, but got: {result}.")
 
 class TestLoadStationsFromFile(unittest.TestCase):
 
-    @patch("builtins.open", new_callable=mock_open, read_data='[{"ID": "GME00129634", "Latitude": 48.0458, "Longitude": 8.4617, "Elevation":720.0, "State":null, "Name":"VILLINGEN-SCHWENNINGEN"}]')
+    @patch("builtins.open", new_callable=mock_open, read_data=testdata.testdata_load_stations["read_data"])
     def test_load_stations_success(self, mock_file):
         """Tests the successful loading of weather station data from the JSON file"""
         result = load_stations_from_file()
 
         # Check if the data was loaded correctly
         self.assertIsInstance(result, list)
-        self.assertEqual(len(result), 1)  # One station should be loaded
-        self.assertEqual(result[0]["ID"], "GME00129634")
-        self.assertEqual(result[0]["Latitude"], 48.0458)
-        self.assertEqual(result[0]["Longitude"], 8.4617)
+        self.assertEqual(result[0]["ID"], "GME00129634", f"Failed. Expected: GME00129634, but got: {result[0]['ID']}.")
+        self.assertEqual(result[0]["Latitude"], 48.0458, f"Failed. Expected: 48.0458, but got: {result[0]['Latitude']}.")
+        self.assertEqual(result[0]["Longitude"], 8.4617, f"Failed. Expected: 8.4617, but got: {result[0]['Longitude']}.")
 
         # Check if the file was opened
         mock_file.assert_called_with("data/stations.json", "r", encoding="utf-8")
@@ -77,23 +75,22 @@ class TestLoadStationsFromFile(unittest.TestCase):
 
 class TestLoadStationInventory(unittest.TestCase):
 
-    @patch("backend.app.utility_scripts.requests.get")  # Mocks API request
+    @patch("backend.app.utility_scripts.requests.get")  # Mocks GET request
     def test_load_station_inventory_success(self, mock_get):
         """Tests if the function loads and saves inventory data correctly"""
-        # Simulate API response
+        # Simulate response
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.text = "GME00129634  48.0458    8.4617 TMAX 1947 2025"
+        mock_response.text = testdata.testdata_load_inventory["mock_response_text"]
         mock_get.return_value = mock_response
 
         # Check if data directory exists
         data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "data"))
         os.makedirs(data_dir, exist_ok=True)
 
-        # Call function
         result = load_station_inventory()
 
-        # Check the result
+        # Check if the file has been saved
         inventory_path = os.path.join(data_dir, "inventory.json")
         self.assertTrue(os.path.exists(inventory_path), f"File {inventory_path} not found.")
         self.assertTrue(result)
@@ -101,34 +98,43 @@ class TestLoadStationInventory(unittest.TestCase):
         # Check if the content has been saved correctly
         with open(inventory_path, "r") as f:
             data = json.load(f)
-            self.assertIn("GME00129634", data)  # ID should exist in the dictionary
-            self.assertIn("TMAX", data["GME00129634"])  # Temperature data should exist
-            self.assertEqual(data["GME00129634"]["TMAX"], [1947, 2025])  # Check start year and end year
+            self.assertIn("GME00129634", data, f"Failed. Expected: GME00129634, but got: {data}.")
+            self.assertIn("TMAX", data["GME00129634"], f"Failed. Expected: TMAX, but got: {data['GME00129634']}.")
+            self.assertIn("TMIN", data["GME00129634"], f"Failed. Expected: TMIN, but got: {data['GME00129634']}.")
+            self.assertEqual(data["GME00129634"]["TMAX"], [1947, 2025],
+                             f"Failed. Expected: [1947, 2025], but got: {data['GME00129634']['TMAX']}.")
+            self.assertEqual(data["GME00129634"]["TMIN"], [1947, 2025],
+                             f"Failed. Expected: [1947, 2025], but got: {data['GME00129634']['TMIN']}.")
 
         # Delete file after test
         os.remove(inventory_path)
 
-    @patch("backend.app.utility_scripts.requests.get")
+    @patch("backend.app.utility_scripts.requests.get") # Mocks GET request
     def test_load_station_inventory_failure(self, mock_get):
-        """Tests the behavior if the API is not available"""
+        """Tests the behavior if the Website is not available"""
         mock_get.return_value.status_code = 404  # Simulate error
 
         result = load_station_inventory()
 
-        self.assertFalse(result)
+        # Check if the function returns False if the download fails
+        self.assertFalse(result, f"Failed. Expected: False, but got: {result}.")
 
 class TestLoadInventoryFromFile(unittest.TestCase):
 
-    @patch("builtins.open", new_callable=mock_open, read_data='{"GME00129634": {"TMAX": [1947, 2024]}}')
+    @patch("builtins.open", new_callable=mock_open, read_data=testdata.testdata_load_inventory["read_data"])
     def test_load_inventory_success(self, mock_file):
         """Tests the successful loading of inventory data from the JSON file"""
         result = load_inventory_from_file()
 
         # Check if the data was loaded correctly
         self.assertIsInstance(result, dict)
-        self.assertIn("GME00129634", result)  # ID should exist
-        self.assertIn("TMAX", result["GME00129634"])  # TMAX should exist
-        self.assertEqual(result["GME00129634"]["TMAX"], [1947, 2024])  # Check data
+        self.assertIn("GME00129634", result, f"Failed. Expected: GME00129634, but got: {result}.")
+        self.assertIn("TMAX", result["GME00129634"], f"Failed. Expected: TMAX, but got: {result['GME00129634']}.")
+        self.assertIn("TMIN", result["GME00129634"], f"Failed. Expected: TMIN, but got: {result['GME00129634']}.")
+        self.assertEqual(result["GME00129634"]["TMAX"], [1947, 2024],
+                         f"Failed. Expected: [1947, 2024], but got: {result['GME00129634']['TMAX']}.")
+        self.assertEqual(result["GME00129634"]["TMIN"], [1947, 2024],
+                         f"Failed. Expected: [1947, 2024], but got: {result['GME00129634']['TMIN']}.")
 
         # Check if the file was opened
         mock_file.assert_called_with("data/inventory.json", "r", encoding="utf-8")
@@ -146,7 +152,7 @@ class TestHaversineDistance(unittest.TestCase):
     def test_haversine_distance(self):
         """Tests the calculation of distances"""
         for lat1, lon1, lat2, lon2, expected in testdata.testdata_haversine:
-            with self.subTest(lat1=lat1, lon1=lon1, lat2=lat2, lon2=lon2): # Prevents an error from stopping all further tests
+            with self.subTest(lat1=lat1, lon1=lon1, lat2=lat2, lon2=lon2): # Prevents an error from stopping the further tests
                 result = haversine_distance(lat1, lon1, lat2, lon2)
                 self.assertAlmostEqual(result, expected, delta=1, # Range of 1 km allowed to avoid roundig errors
                                        msg=f"Failed for input: ({lat1}, {lon1}) -> ({lat2}, {lon2}). Expected {expected} km, but got {result} km.")
@@ -182,24 +188,33 @@ class TestFindNearestStations(unittest.TestCase):
                 
 class TestDownloadWeatherData(unittest.TestCase):
 
-    @patch("backend.app.utility_scripts.requests.get")
-    def test_download_weather_data(self, mock_get):
+    @patch("backend.app.utility_scripts.requests.get") # Mocks GET request
+    def test_download_weather_data_success(self, mock_get):
         """Tests if weather data is successfully downloaded and saved"""
-        station_id = testdata.testdata_download_weather["station_id"]
-        start_year = testdata.testdata_download_weather["start_year"]
-        end_year = testdata.testdata_download_weather["end_year"]
-        example_date = testdata.testdata_download_weather["example_date"]
+        # Simulate response
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.text = testdata.testdata_download_weather["mock_response_text"]
+        mock_get.return_value = mock_response
 
-        try:
-            result = download_weather_data(station_id, start_year, end_year)
-        except Exception as e:
-            self.skipTest(f"Website unavailable: {e}")
+        result = download_weather_data("GME00129634", 2020, 2021)
 
+        # Check if the weather data has been processed correctly
         self.assertIsInstance(result, dict)
-        self.assertIn("data", result)
+        self.assertIn("data", result, "Key 'data' is missing in the weather data.")
 
-        # Check if date is in the data
-        self.assertIn(example_date, result["data"], f"Date {example_date} is missing in the weather data.")
+        # Check if example date is in the data
+        self.assertEqual(result["data"]["2021-01-01"]["TMAX"], 0.8)
+        self.assertEqual(result["data"]["2021-01-01"]["TMIN"], -2.4)
+
+    @patch("backend.app.utility_scripts.requests.get") # Mocks GET request
+    def test_download_weather_data_failure(self, mock_get):
+        """Tests the behavior if the Website is not available"""
+        mock_get.return_value.status_code = 404  # Simulate error
+
+        # Check if the function raises a ValueError if the website is not available
+        with self.assertRaises(ValueError, msg="Failed. ValueError not raised."):
+            download_weather_data("GME00129634", 2020, 2021)
 
 class TestCalculateMeans(unittest.TestCase):
 
