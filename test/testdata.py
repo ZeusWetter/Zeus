@@ -169,3 +169,13 @@ testdata_calculate_means = {
         "autumn": {}
     }
 }
+
+testdata_fill_input_fields = {
+    # Sample input
+    "latitude": "48.0458",
+    "longitude": "8.4617",
+    "radius": "50",
+    "maxStations": "5",
+    "startYear": "2010",
+    "endYear": "2020"
+}
