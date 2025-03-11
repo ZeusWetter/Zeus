@@ -26,7 +26,9 @@ jobs:
           if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
 
       - name: Run Unit Tests Backend
-        run: python -m unittest discover -s test -p 'test_backend.py'
+        working-directory: /test
+        run: python -m unittest discover -p 'test_backend.py'
 
       - name: Run Unit Tests Frontend
-        run: python -m unittest discover -s test -p 'test_frontend.py'
+        working-directory: /test
+        run: python -m unittest discover -p 'test_frontend.py'

@@ -5,6 +5,11 @@ services:
       - "8000:8000"
     networks:
       - zeus-network
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
 
   frontend:
     image: ghcr.io/zeuswetter/zeus-frontend:latest
@@ -16,6 +21,11 @@ services:
       - WEB_APP_API_URL=http://localhost:8000
     networks:
       - zeus-network
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
 
 networks:
   zeus-network:
