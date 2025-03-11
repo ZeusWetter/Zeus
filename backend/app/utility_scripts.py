@@ -11,7 +11,6 @@ from collections import OrderedDict
 def load_stations_data():
     """
     Lädt die Stationsdaten herunter und speichert sie in einer JSON unter data/stations.json
-
     Rückgabe: True / False im Bezug auf erolgreiche Durchführung
     """
     url = "https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/ghcnd-stations.txt"
@@ -88,7 +87,7 @@ def load_station_inventory():
                 )
             else:
                 inventory[station_id][element] = (start_year, end_year)
-                
+
     # Speichern als JSON-Datei
     with open(file_path, "w", encoding="utf-8") as json_file:
         json.dump(inventory, json_file, indent=4)
