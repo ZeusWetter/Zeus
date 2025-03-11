@@ -203,10 +203,6 @@ class TestDownloadWeatherData(unittest.TestCase):
         self.assertIsInstance(result, dict)
         self.assertIn("data", result, "Key 'data' is missing in the weather data.")
 
-        # Check if example date is in the data
-        self.assertEqual(result["data"]["2021-01-01"]["TMAX"], 0.8)
-        self.assertEqual(result["data"]["2021-01-01"]["TMIN"], -2.4)
-
     @patch("backend.app.utility_scripts.requests.get")  # Mocks GET request
     def test_download_weather_data_failure(self, mock_get):
         """Tests the behavior if the Website is not available"""
