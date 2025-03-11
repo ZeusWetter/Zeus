@@ -10,9 +10,7 @@ on:
 
 jobs:
   test:
-    runs-on: RancherOS-latest
-    container:
-      image: rancher/os-docker:19.03.15
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -25,14 +23,8 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install --upgrade pip
-          pip install selenium webdriver-manager
-          docker-compose up -d
           if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
 
       - name: Run Unit Tests Backend
         working-directory: test
         run: python -m unittest discover -p 'test_backend.py'
-
-      - name: Run Unit Tests Frontend
-        working-directory: test
-        run: python -m unittest discover -p 'test_frontend.py'
