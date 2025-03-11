@@ -25,5 +25,8 @@ jobs:
           pip install --upgrade pip
           if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
 
-      - name: Run Unit Tests
-        run: python -m unittest discover -s test -p 'test.py'
+      - name: Run Unit Tests Backend
+        run: python -m unittest discover -s test -p 'test_backend.py'
+
+      - name: Run Unit Tests Frontend
+        run: python -m unittest discover -s test -p 'test_frontend.py'
